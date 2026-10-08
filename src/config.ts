@@ -32,14 +32,18 @@ export const HERO = {
 export type Social = { name: string; url: string; handle: string; icon: SocialIcon };
 export type SocialIcon = 'github' | 'linkedin' | 'htb' | 'picoctf' | 'cyberdefenders' | 'mail' | 'rss';
 
-/** Replace the placeholder handles with your own profiles. */
-export const SOCIALS: Social[] = [
+/** Replace the placeholder handles with your own profiles. Entries still
+ *  holding a placeholder ('your-…', '000000') are left out of the site. */
+const ALL_SOCIALS: Social[] = [
   { name: 'GitHub', url: 'https://github.com/TriNguyen17', handle: 'TriNguyen17', icon: 'github' },
   { name: 'LinkedIn', url: 'https://www.linkedin.com/in/your-handle', handle: 'your-handle', icon: 'linkedin' },
   { name: 'HackTheBox', url: 'https://app.hackthebox.com/profile/000000', handle: 'your-htb-name', icon: 'htb' },
   { name: 'picoCTF', url: 'https://play.picoctf.org/users/your-handle', handle: 'your-handle', icon: 'picoctf' },
   { name: 'CyberDefenders', url: 'https://cyberdefenders.org/p/your-handle', handle: 'your-handle', icon: 'cyberdefenders' },
 ];
+
+const isPlaceholder = (s: Social) => /your-|\/000000$/.test(`${s.url} ${s.handle}`);
+export const SOCIALS: Social[] = ALL_SOCIALS.filter((s) => !isPlaceholder(s));
 
 export const NAV = [
   { label: 'Home', href: '/' },

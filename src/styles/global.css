@@ -253,8 +253,10 @@ kbd {
   border: 0;
 }
 
+/* Fixed, not absolute: focusing it (Shift+Tab from the header mid-page) must
+   not scroll the page back to the top. */
 .skip-link {
-  position: absolute;
+  position: fixed;
   left: 12px;
   top: -48px;
   z-index: 100;

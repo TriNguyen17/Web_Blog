@@ -273,13 +273,15 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
   }
 
   /* Collapsible sub-sections: animated with grid-template-rows. Without JS
-     (no `html.js`) they stay open so every link is reachable. */
+     (no `html.js`) they stay open so every link is reachable. Visible at once
+     when opening (also when the drawer opens, so focus can move in), but kept
+     visible until the collapse animation has finished. */
   .toc__sub {
     display: grid;
     grid-template-rows: 1fr;
     transition:
       grid-template-rows 0.25s var(--ease),
-      visibility 0.25s;
+      visibility 0s;
   }
 
   .toc__sub > ul {
@@ -292,6 +294,9 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
   :global(.js) .toc__item:not([data-expanded='true']) > .toc__sub {
     grid-template-rows: 0fr;
     visibility: hidden;
+    transition:
+      grid-template-rows 0.25s var(--ease),
+      visibility 0.25s;
   }
 
   /* The sub-list clips overflow (for the collapse animation), so keep the
@@ -411,6 +416,11 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
 
     .toc__close {
       display: grid;
+    }
+
+    /* Keep the footer links clear of the floating "Mục lục" button. */
+    :global(.site-footer) {
+      padding-bottom: 56px;
     }
 
     .toc-backdrop {

@@ -47,6 +47,9 @@ export function initLightbox() {
   let slides: Slide[] = [];
   let pos = 0;
   let lastFocus: HTMLElement | null = null;
+  // Bumped on every slide change and on close, so a photo that finishes
+  // loading after the reader moved on is ignored.
+  let seq = 0;
 
   /** Build the slide list from the buttons currently visible in the grid. */
   function collect(): Slide[] {
@@ -71,12 +74,8 @@ export function initLightbox() {
     if (s) new Image().src = s.src;
   };
 
-  function show(i: number, announce = true) {
-    pos = (i + slides.length) % slides.length;
-    const slide = slides[pos];
-
-    dialog!.classList.add('is-loading');
-    img!.onload = () => dialog!.classList.remove('is-loading');
+  /** Put a slide's photo and text on screen (photo already loaded). */
+  function render(slide: Slide, announce: boolean) {
     img!.src = slide.src;
     img!.alt = slide.alt;
 
@@ -103,6 +102,25 @@ export function initLightbox() {
 
     // Announce slide changes (not the first open: the dialog itself is announced).
     if (statusEl) statusEl.textContent = announce ? `${pos + 1} / ${slides.length}: ${slide.alt}` : '';
+  }
+
+  function show(i: number, announce = true) {
+    pos = (i + slides.length) % slides.length;
+    const slide = slides[pos];
+    const token = ++seq;
+
+    // Load and decode the full-size file first, then swap photo and text
+    // together: the caption never sits over the previous photo, or over an
+    // empty frame. A failed load still shows the slide (with its alt text).
+    dialog!.classList.add('is-loading');
+    const apply = () => {
+      if (token !== seq) return;
+      render(slide, announce);
+      dialog!.classList.remove('is-loading');
+    };
+    const full = new Image();
+    full.src = slide.src;
+    full.decode().then(apply, apply);
 
     const many = slides.length > 1;
     prevBtn.hidden = !many;
@@ -140,13 +158,26 @@ export function initLightbox() {
     else if (e.key === 'ArrowLeft') go(-1);
   });
 
-  // Click outside the figure closes (dialog fills the viewport).
+  // Click outside the figure closes (dialog fills the viewport). Not the 2nd
+  // click of a double-click: that is the one that opened it landing outside.
   dialog.addEventListener('click', (e) => {
+    if (e.detail > 1) return;
     if (!(e.target as HTMLElement).closest('.lightbox__figure, .lightbox__nav')) close();
   });
 
+  // Clear the slide, so the next open starts from an empty frame (not the
+  // last photo, nor its alt text over a broken image) while it loads.
   dialog.addEventListener('close', () => {
+    seq++;
+    dialog.classList.remove('is-loading');
     img!.src = 'data:,';
+    img!.alt = '';
+    captionEl.textContent = '';
+    dateEl.textContent = '';
+    countEl.textContent = '';
+    tagsEl.replaceChildren();
+    albumEl.hidden = true;
+    if (statusEl) statusEl.textContent = '';
     lastFocus?.focus({ preventScroll: true });
   });
 

@@ -207,8 +207,18 @@ export function initSearch() {
     else input!.removeAttribute('aria-activedescendant');
   }
 
+  // Set when the dialog closes because a same-page result (#anchor) was
+  // followed: the browser then moves the focus starting point to that heading,
+  // and focus must not be pulled back to the header.
+  let followedInPage = false;
+  const followsInPage = (link: HTMLAnchorElement, e?: MouseEvent) =>
+    !(e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0)) &&
+    link.pathname === location.pathname &&
+    link.hash !== '';
+
   async function open() {
     if (dialog!.open) return;
+    followedInPage = false;
     dialog!.showModal();
     input!.select();
     if (!docs) {
@@ -225,6 +235,7 @@ export function initSearch() {
   // 'close' has fired.
   dialog.addEventListener('close', () =>
     requestAnimationFrame(() => {
+      if (followedInPage) return;
       const a = document.activeElement;
       if (a && a !== document.body && !dialog.contains(a) && a.getClientRects().length) return;
       const trigger = [...document.querySelectorAll<HTMLElement>('[data-search-open]')].find(
@@ -249,19 +260,28 @@ export function initSearch() {
       const link = options()[active];
       if (link) {
         e.preventDefault();
+        followedInPage = followsInPage(link);
         dialog.close();
         link.click();
       }
-    } else if (e.key === 'Escape') {
-      // type="search" would otherwise only clear the text on the first Esc.
-      e.preventDefault();
-      dialog.close();
     }
+  });
+
+  // Esc anywhere in the dialog (input or close button). preventDefault: for
+  // type="search" (which would otherwise only clear the text on the first
+  // Esc), and so the menu / TOC drawer underneath know the dialog took it.
+  dialog.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    dialog.close();
   });
 
   // Close when following a result (also covers same-page #anchors).
   list.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).closest('a')) dialog.close();
+    const link = (e.target as HTMLElement).closest('a');
+    if (!link) return;
+    followedInPage = followsInPage(link, e);
+    dialog.close();
   });
 
   document.addEventListener('keydown', (e) => {
