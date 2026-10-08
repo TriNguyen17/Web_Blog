@@ -13,10 +13,11 @@ const isActive = (href: string) => {
 
 <header class="site-header">
   <div class="container site-header__inner">
-    <a class="brand" href={url('/')} aria-label={`${SITE.author} — trang chủ`}>
+    <a class="brand" href={url('/')}>
       <span class="brand__path">~/{SITE.brand}</span>
-      <span class="brand__prompt">$</span>
+      <span class="brand__prompt" aria-hidden="true">$</span>
       <span class="brand__cursor" aria-hidden="true"></span>
+      <span class="sr-only">— trang chủ</span>
     </a>
 
     <nav class="site-nav" id="site-nav" aria-label="Điều hướng chính" data-open="false">
@@ -34,10 +35,10 @@ const isActive = (href: string) => {
     </nav>
 
     <div class="site-header__actions">
-      <button class="search-trigger" type="button" data-search-open aria-label="Tìm kiếm bài viết">
+      <button class="search-trigger" type="button" data-search-open aria-keyshortcuts="Control+K /">
         <Icon name="search" size={16} />
         <span class="search-trigger__label">Tìm kiếm…</span>
-        <kbd class="search-trigger__kbd">Ctrl K</kbd>
+        <kbd class="search-trigger__kbd" aria-hidden="true">Ctrl K</kbd>
       </button>
       <ThemeToggle />
       <button
@@ -60,9 +61,10 @@ const isActive = (href: string) => {
     top: 0;
     z-index: 50;
     height: var(--header-h);
-    background: color-mix(in srgb, var(--bg) 92%, transparent);
-    backdrop-filter: saturate(160%) blur(12px);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    /* Prefixed first: the minifier keeps only the last of the pair. */
     -webkit-backdrop-filter: saturate(160%) blur(12px);
+    backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid var(--border-soft);
   }
 
@@ -140,6 +142,7 @@ const isActive = (href: string) => {
 
   .site-nav a[aria-current='page']::before {
     content: './';
+    content: './' / '';
     opacity: 0.6;
   }
 
@@ -180,9 +183,18 @@ const isActive = (href: string) => {
   }
 
   @media (max-width: 860px) {
-    .search-trigger__label,
     .search-trigger__kbd {
       display: none;
+    }
+
+    /* Visually hidden but still the button's accessible name. */
+    .search-trigger__label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     .search-trigger {
@@ -214,6 +226,10 @@ const isActive = (href: string) => {
       transform: none;
       opacity: 1;
       visibility: visible;
+      transition:
+        opacity 0.18s var(--ease),
+        transform 0.18s var(--ease),
+        visibility 0s;
     }
 
     .site-nav ul {
@@ -236,6 +252,8 @@ const isActive = (href: string) => {
       nav.dataset.open = String(open);
       toggle.setAttribute('aria-expanded', String(open));
       toggle.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu');
+      // Move keyboard focus into the menu once it is visible.
+      if (open) requestAnimationFrame(() => nav.querySelector<HTMLElement>('a')?.focus());
     };
 
     toggle.addEventListener('click', () => setOpen(nav.dataset.open !== 'true'));
@@ -251,6 +269,11 @@ const isActive = (href: string) => {
     document.addEventListener('click', (e) => {
       const target = e.target as Node;
       if (nav.dataset.open === 'true' && !nav.contains(target) && !toggle.contains(target)) setOpen(false);
+    });
+    // Tabbing out of the open menu closes it.
+    nav.addEventListener('focusout', (e) => {
+      const next = e.relatedTarget as Node | null;
+      if (nav.dataset.open === 'true' && next && !nav.contains(next) && next !== toggle) setOpen(false);
     });
   }
 </script>

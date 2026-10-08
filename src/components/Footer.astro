@@ -9,7 +9,7 @@ const year = new Date().getFullYear();
 <footer class="site-footer">
   <div class="container site-footer__inner">
     <p class="site-footer__copy">
-      <span class="site-footer__prompt">$</span> echo "© {year} {SITE.author}" ·
+      <span class="site-footer__prompt" aria-hidden="true">$</span> echo "© {year} {SITE.author}" ·{' '}
       <a href="https://astro.build" rel="noopener">built with Astro</a>
     </p>
     <ul class="site-footer__links" aria-label="Liên kết">

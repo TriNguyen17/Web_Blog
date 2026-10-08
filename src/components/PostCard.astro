@@ -10,24 +10,33 @@ interface Props {
   item: FeedItem;
   /** Load the cover eagerly (first cards above the fold). */
   eager?: boolean;
+  /** Heading level of the card title (2 when the list sits right under the page h1). */
+  headingLevel?: 2 | 3;
 }
 
-const { item, eager = false } = Astro.props;
+const { item, eager = false, headingLevel = 3 } = Astro.props;
 const categories = [...new Set(item.categories)];
+const Heading = `h${headingLevel}` as 'h2' | 'h3';
 ---
 
 {
   item.type === 'writeup' ? (
-    <article class="post-card post-card--writeup" data-type="writeup" data-tags={item.tags.join(',')} data-reveal>
+    <article
+      class="post-card post-card--writeup"
+      data-type="writeup"
+      data-tags={item.tags.join(',')}
+      data-cats={categories.map(categorySlug).join(',')}
+      data-reveal
+    >
       <div class="post-card__top">
         <span class="post-card__kind">
           <Icon name="flag" size={14} /> CTF write-up
         </span>
         <time datetime={isoDate(item.date)}>{formatDate(item.date)}</time>
       </div>
-      <h3 class="post-card__title">
+      <Heading class="post-card__title">
         <a href={item.href}>{item.title}</a>
-      </h3>
+      </Heading>
       <p class="post-card__desc">{item.description}</p>
       {categories.length > 0 && (
         <div class="post-card__cats">
@@ -61,9 +70,9 @@ const categories = [...new Set(item.categories)];
           <span class="post-card__kind post-card__kind--photo">Photo</span>
           <time datetime={isoDate(item.date)}>{formatDate(item.date)}</time>
         </div>
-        <h3 class="post-card__title">
+        <Heading class="post-card__title">
           <a href={item.href}>{item.title}</a>
-        </h3>
+        </Heading>
         <p class="post-card__desc">{item.description}</p>
         <TagList tags={item.tags} class="post-card__tags" />
       </div>

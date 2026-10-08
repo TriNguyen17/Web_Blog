@@ -12,10 +12,11 @@
   --border-soft: #21262d;
   --text: #e6edf3;
   --text-muted: #8b949e;
-  --text-faint: #6e7681;
+  --text-faint: #848d97;
 
   --accent: #39d353;
   --accent-strong: #5ae672;
+  --accent-text: #39d353;
   --accent-ink: #03140a;
   --accent-soft: rgb(57 211 83 / 0.1);
   --accent-softer: rgb(57 211 83 / 0.06);
@@ -53,10 +54,11 @@
   --border-soft: #e4e8ec;
   --text: #1f2328;
   --text-muted: #59636e;
-  --text-faint: #818b98;
+  --text-faint: #656d76;
 
   --accent: #1a7f37;
   --accent-strong: #116329;
+  --accent-text: #116329;
   --accent-ink: #ffffff;
   --accent-soft: rgb(26 127 55 / 0.1);
   --accent-softer: rgb(26 127 55 / 0.05);
@@ -275,6 +277,7 @@ kbd {
 
 .eyebrow::before {
   content: '>';
+  content: '>' / '';
   opacity: 0.7;
 }
 
@@ -294,6 +297,7 @@ kbd {
 
 .section-title h2::before {
   content: '## ';
+  content: '## ' / '';
   color: var(--accent);
 }
 
@@ -396,7 +400,6 @@ kbd {
 }
 
 .chip__count {
-  opacity: 0.7;
   font-size: 0.72rem;
 }
 
@@ -450,6 +453,11 @@ a.tag:hover {
   height: 6px;
   border-radius: 50%;
   background: var(--c);
+}
+
+/* Light theme: darker text on the light tint so every badge passes 4.5:1. */
+:root[data-theme='light'] .cat-badge {
+  color: color-mix(in srgb, var(--c) 80%, #000);
 }
 
 [data-cat='re'] { --c: var(--cat-re); }
@@ -524,4 +532,16 @@ a.tag:hover {
 
 [hidden] {
   display: none !important;
+}
+
+/* Respect reduced-motion: no transitions, animations or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

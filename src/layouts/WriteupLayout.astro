@@ -90,6 +90,7 @@ const minutes = readingTime(entry.body);
         )
       }
 
+      {(prev || next) && (
       <nav class="post-nav" aria-label="Write-up khác">
         {
           prev ? (
@@ -114,6 +115,7 @@ const minutes = readingTime(entry.body);
           )
         }
       </nav>
+      )}
     </article>
   </div>
 </BaseLayout>
@@ -291,6 +293,7 @@ const minutes = readingTime(entry.body);
 
   .writeup-content :global(.ctf-challenge__title::before) {
     content: '>';
+    content: '>' / '';
     margin-right: 0.6ch;
     color: var(--accent);
   }
@@ -358,7 +361,7 @@ const minutes = readingTime(entry.body);
     display: inline-block;
     padding: 8px 14px;
     font-size: 0.95rem;
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     border: 1px dashed var(--accent-border);
     border-radius: var(--radius);

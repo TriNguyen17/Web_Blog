@@ -5,8 +5,8 @@ import { url } from '../lib/utils';
 
 <BaseLayout title="404" description="Trang không tồn tại." noindex>
   <div class="page container notfound">
-    <pre class="notfound__art"><code>$ cat {Astro.url.pathname}
-cat: {Astro.url.pathname}: No such file or directory</code></pre>
+    <pre class="notfound__art"><code>$ cat <span data-path>…</span>
+cat: <span data-path>…</span>: No such file or directory</code></pre>
     <h1>404 — Không tìm thấy trang</h1>
     <p>Đường dẫn bạn truy cập không tồn tại hoặc đã bị di chuyển.</p>
     <div class="notfound__actions">
@@ -15,6 +15,18 @@ cat: {Astro.url.pathname}: No such file or directory</code></pre>
     </div>
   </div>
 </BaseLayout>
+
+<script is:inline>
+  // The 404 page is built once and served for every unknown URL, so the
+  // requested path is filled in on the client.
+  document.querySelectorAll('[data-path]').forEach(function (el) {
+    var p = location.pathname;
+    try {
+      p = decodeURI(p);
+    } catch (e) {}
+    el.textContent = p;
+  });
+</script>
 
 <style>
   .notfound {
@@ -33,7 +45,8 @@ cat: {Astro.url.pathname}: No such file or directory</code></pre>
     background: var(--bg-sidebar);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     max-width: 100%;
   }
 

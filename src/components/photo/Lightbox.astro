@@ -19,6 +19,7 @@ import Icon from '../Icon.astro';
         <ul class="tags lightbox__tags" data-lb-tags></ul>
         <a class="lightbox__album" data-lb-album hidden></a>
       </figcaption>
+      <p class="sr-only" role="status" data-lb-status></p>
     </figure>
 
     <button class="lightbox__nav lightbox__nav--next" type="button" data-lb-next aria-label="Ảnh kế tiếp">
@@ -32,6 +33,11 @@ import Icon from '../Icon.astro';
 </dialog>
 
 <style>
+  /* Stop the page behind the open lightbox from scrolling. */
+  :global(html:has(.lightbox[open])) {
+    overflow: hidden;
+  }
+
   .lightbox {
     width: 100vw;
     max-width: 100vw;
@@ -187,8 +193,14 @@ import Icon from '../Icon.astro';
   }
 
   @media (max-width: 600px) {
+    /* Reserve room for the close button (top) and prev/next (bottom). */
+    .lightbox__stage {
+      padding-top: 60px;
+      padding-bottom: 84px;
+    }
+
     .lightbox__img {
-      max-height: 64dvh;
+      max-height: calc(100dvh - 330px);
     }
 
     .lightbox__nav {

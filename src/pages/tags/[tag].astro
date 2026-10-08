@@ -28,7 +28,7 @@ const { tag, items } = Astro.props;
     </header>
 
     <div class="card-grid">
-      {items.map((item, i) => <PostCard item={item} eager={i < 3} />)}
+      {items.map((item, i) => <PostCard item={item} eager={i < 3} headingLevel={2} />)}
     </div>
   </div>
 </BaseLayout>

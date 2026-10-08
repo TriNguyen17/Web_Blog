@@ -75,13 +75,21 @@ export function initToc() {
 
   let activeId: string | null = null;
   let lockUntil = 0;
+  // Last heading the reader jumped to via a link. Near the bottom of the page
+  // the last few headings can't reach the activation line, so the clicked one
+  // wins there until the reader scrolls by hand.
+  let clickedId: string | null = null;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
   function revealInSidebar(link: HTMLElement) {
     if (mobile.matches && toc!.dataset.open !== 'true') return;
     const box = scroller.getBoundingClientRect();
     const r = link.getBoundingClientRect();
     if (r.top < box.top + 48 || r.bottom > box.bottom - 48) {
-      scroller.scrollTo({ top: scroller.scrollTop + (r.top - box.top) - box.height / 3, behavior: 'smooth' });
+      scroller.scrollTo({
+        top: scroller.scrollTop + (r.top - box.top) - box.height / 3,
+        behavior: reducedMotion.matches ? 'auto' : 'smooth',
+      });
     }
   }
 
@@ -126,7 +134,12 @@ export function initToc() {
 
   function currentTarget() {
     const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-    if (atBottom) return targets.at(-1) ?? null;
+    if (atBottom) {
+      const clicked = clickedId ? document.getElementById(clickedId) : null;
+      const top = clicked?.getBoundingClientRect().top;
+      if (clicked && top !== undefined && top >= 0 && top < window.innerHeight) return clicked;
+      return targets.at(-1) ?? null;
+    }
 
     let current: HTMLElement | null = null;
     for (const t of targets) {
@@ -143,6 +156,18 @@ export function initToc() {
     if (progressBar) progressBar.style.transform = `scaleX(${ratio})`;
   }
 
+  // Desktop: once the footer scrolls into view, shrink the sticky sidebar so
+  // it ends at the footer instead of being pushed up under the site header.
+  const footer = document.querySelector<HTMLElement>('.site-footer');
+  function fitToFooter() {
+    if (mobile.matches || !footer) {
+      toc!.style.height = '';
+      return;
+    }
+    const overlap = Math.max(0, window.innerHeight - footer.getBoundingClientRect().top);
+    toc!.style.height = overlap > 0 ? `calc(100dvh - var(--header-h) - ${overlap}px)` : '';
+  }
+
   let ticking = false;
   function onScroll() {
     if (ticking) return;
@@ -150,6 +175,7 @@ export function initToc() {
     requestAnimationFrame(() => {
       ticking = false;
       updateProgress();
+      fitToFooter();
       if (performance.now() < lockUntil) return;
       setActive(currentTarget()?.id ?? null);
     });
@@ -161,8 +187,16 @@ export function initToc() {
     const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
     const id = a ? decodeURIComponent(a.hash.slice(1)) : '';
     if (!id || !targets.some((t) => t.id === id)) return;
+    clickedId = id;
     setActive(id);
     lockUntil = performance.now() + 1000;
+  });
+  // Scrolling by hand hands control back to the scroll spy.
+  const releaseClick = () => (clickedId = null);
+  window.addEventListener('wheel', releaseClick, { passive: true });
+  window.addEventListener('touchstart', releaseClick, { passive: true });
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) releaseClick();
   });
   window.addEventListener('scrollend', () => {
     lockUntil = 0;
@@ -170,25 +204,59 @@ export function initToc() {
   });
 
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', () => {
-    measureActivationLine();
-    onScroll();
-  }, { passive: true });
+  window.addEventListener(
+    'resize',
+    () => {
+      measureActivationLine();
+      onScroll();
+    },
+    { passive: true },
+  );
   measureActivationLine();
   onScroll();
 
   /* ---------------- mobile drawer ---------------- */
+  const isFocusable = (el: HTMLElement) =>
+    el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+  const focusables = () =>
+    [...toc!.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')].filter(isFocusable);
+
   function setOpen(open: boolean) {
     toc!.dataset.open = String(open);
     fab?.setAttribute('aria-expanded', String(open));
     if (backdrop) backdrop.hidden = !open;
     document.documentElement.style.overflow = open ? 'hidden' : '';
     if (open) {
-      const active = toc!.querySelector<HTMLElement>('[aria-current="location"]') ?? links[0];
-      active?.focus({ preventScroll: true });
-      if (active) revealInSidebar(active);
+      toc!.setAttribute('role', 'dialog');
+      toc!.setAttribute('aria-modal', 'true');
+      // Wait a frame so the drawer is visible (and therefore focusable).
+      requestAnimationFrame(() => {
+        const active = toc!.querySelector<HTMLElement>('[aria-current="location"]');
+        const target = active && isFocusable(active) ? active : focusables()[0];
+        target?.focus({ preventScroll: true });
+        if (target) revealInSidebar(target);
+      });
+    } else {
+      toc!.removeAttribute('role');
+      toc!.removeAttribute('aria-modal');
     }
   }
+
+  // Keep Tab / Shift+Tab inside the open drawer.
+  toc.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || toc.dataset.open !== 'true' || !mobile.matches) return;
+    const list = focusables();
+    if (!list.length) return;
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   fab?.addEventListener('click', () => setOpen(true));
   document.querySelectorAll('[data-toc-close]').forEach((el) => el.addEventListener('click', () => {
@@ -206,5 +274,6 @@ export function initToc() {
   });
   mobile.addEventListener('change', () => {
     if (!mobile.matches) setOpen(false);
+    fitToFooter();
   });
 }

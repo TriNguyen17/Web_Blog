@@ -14,7 +14,7 @@ export const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 export function slugify(input: string) {
   return input
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/gi, 'd')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -56,9 +56,11 @@ export function stripMarkdown(body = '') {
     .replace(/`([^`]*)`/g, '$1')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]+>/g, ' ')
+    .replace(/<\/?[a-zA-Z][^>]*>/g, ' ')
     .replace(/^[#>\-*|\s]+/gm, ' ')
-    .replace(/[*_~|]/g, ' ')
+    // Emphasis markers only at word edges, so snake_case names and flags
+    // (dns_3xf1l, render_template_string) stay searchable.
+    .replace(/(?<![\p{L}\p{N}])[*_~]+|[*_~]+(?![\p{L}\p{N}])|\|/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

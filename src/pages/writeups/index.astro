@@ -44,7 +44,7 @@ const totalChallenges = writeups.reduce((sum, e) => sum + e.data.challenges.leng
           <FilterBar options={filterOptions} label="Lọc write-up theo category" />
           <div class="card-grid" data-filter-items>
             {items.map((item, i) => (
-              <PostCard item={item} eager={i < 3} />
+              <PostCard item={item} eager={i < 3} headingLevel={2} />
             ))}
           </div>
           <p class="empty-state" data-filter-empty hidden>
