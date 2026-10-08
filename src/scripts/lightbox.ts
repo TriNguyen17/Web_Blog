@@ -146,7 +146,7 @@ export function initLightbox() {
   });
 
   dialog.addEventListener('close', () => {
-    img!.removeAttribute('src');
+    img!.src = 'data:,';
     lastFocus?.focus({ preventScroll: true });
   });
 

@@ -221,13 +221,18 @@ export function initSearch() {
   document.querySelectorAll('[data-search-open]').forEach((btn) => btn.addEventListener('click', open));
   // If the element that opened the dialog is gone or hidden, don't leave
   // focus on <body>: fall back to the visible search button.
-  dialog.addEventListener('close', () => {
-    if (document.activeElement && document.activeElement !== document.body) return;
-    const trigger = [...document.querySelectorAll<HTMLElement>('[data-search-open]')].find(
-      (el) => el.getClientRects().length > 0,
-    );
-    trigger?.focus({ preventScroll: true });
-  });
+  // Checked a frame later: the browser restores focus (or drops it) after
+  // 'close' has fired.
+  dialog.addEventListener('close', () =>
+    requestAnimationFrame(() => {
+      const a = document.activeElement;
+      if (a && a !== document.body && !dialog.contains(a) && a.getClientRects().length) return;
+      const trigger = [...document.querySelectorAll<HTMLElement>('[data-search-open]')].find(
+        (el) => el.getClientRects().length > 0,
+      );
+      trigger?.focus({ preventScroll: true });
+    }),
+  );
   dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close());
 
   // Click on the backdrop closes the dialog.

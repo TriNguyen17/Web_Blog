@@ -75,9 +75,9 @@ export function initToc() {
 
   let activeId: string | null = null;
   let lockUntil = 0;
-  // Last heading the reader jumped to via a link. Near the bottom of the page
-  // the last few headings can't reach the activation line, so the clicked one
-  // wins there until the reader scrolls by hand.
+  // Last heading the reader jumped to (link click or URL hash). Near the
+  // bottom of the page a jump may not bring it up to the activation line, so
+  // it wins while visible, until the reader scrolls by hand.
   let clickedId: string | null = null;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -133,17 +133,27 @@ export function initToc() {
   }
 
   function currentTarget() {
-    const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-    if (atBottom) {
-      const clicked = clickedId ? document.getElementById(clickedId) : null;
-      const top = clicked?.getBoundingClientRect().top;
-      if (clicked && top !== undefined && top >= 0 && top < window.innerHeight) return clicked;
-      return targets.at(-1) ?? null;
+    // A heading the reader jumped to stays current while it is on screen,
+    // until they scroll by hand.
+    const clicked = clickedId ? document.getElementById(clickedId) : null;
+    if (clicked) {
+      const top = clicked.getBoundingClientRect().top;
+      if (top >= 0 && top < window.innerHeight) return clicked;
     }
+
+    const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+    if (atBottom) return targets.at(-1) ?? null;
+
+    // Over the last stretch of the page the line slides down, so headings that
+    // can never scroll up to the normal line (the last challenge's steps)
+    // still get their turn before the page bottom.
+    const remaining = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+    const zone = window.innerHeight * 0.6;
+    const line = remaining < zone ? activationLine + (zone - remaining) : activationLine;
 
     let current: HTMLElement | null = null;
     for (const t of targets) {
-      if (t.getBoundingClientRect().top - activationLine <= 0) current = t;
+      if (t.getBoundingClientRect().top - line <= 0) current = t;
       else break;
     }
     return current;
@@ -194,7 +204,11 @@ export function initToc() {
   // Arriving through a URL hash (page load, Back/Forward) counts as a click.
   const fromHash = () => {
     const id = decodeURIComponent(location.hash.slice(1));
-    if (id && targets.some((t) => t.id === id)) clickedId = id;
+    if (!id || !targets.some((t) => t.id === id)) return;
+    clickedId = id;
+    // Back/Forward between two targets that are both visible at the bottom
+    // does not scroll, so apply the highlight directly.
+    setActive(id);
   };
   fromHash();
   window.addEventListener('hashchange', fromHash);
@@ -237,7 +251,7 @@ export function initToc() {
     toc!.dataset.open = String(open);
     fab?.setAttribute('aria-expanded', String(open));
     if (backdrop) backdrop.hidden = !open;
-    document.documentElement.style.overflow = open ? 'hidden' : '';
+    document.documentElement.classList.toggle('scroll-locked', open);
     if (open) {
       toc!.setAttribute('role', 'dialog');
       toc!.setAttribute('aria-modal', 'true');
@@ -287,7 +301,8 @@ export function initToc() {
     if (mobile.matches && (e.target as HTMLElement).closest('a')) setOpen(false);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && toc.dataset.open === 'true') {
+    // defaultPrevented: Esc already closed a dialog on top (search).
+    if (e.key === 'Escape' && !e.defaultPrevented && toc.dataset.open === 'true') {
       setOpen(false);
       fab?.focus({ preventScroll: true });
     }

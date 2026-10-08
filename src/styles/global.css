@@ -25,6 +25,9 @@
 
   --shadow: 0 10px 30px rgb(1 4 9 / 0.55);
   --overlay: rgb(1 4 9 / 0.72);
+  /* --overlay / the lightbox backdrop, flattened over --bg */
+  --scrim-drawer: #05080d;
+  --scrim-lightbox: #02050a;
 
   --cat-re: #d2a8ff;
   --cat-forensics: #39c5cf;
@@ -67,6 +70,8 @@
 
   --shadow: 0 10px 30px rgb(31 35 40 / 0.12);
   --overlay: rgb(31 35 40 / 0.55);
+  --scrim-drawer: #848689;
+  --scrim-lightbox: #1a1d22;
 
   --cat-re: #8250df;
   --cat-forensics: #1b7c83;
@@ -119,13 +124,33 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Keeps the layout still when an overlay locks page scrolling. */
+}
+
+/* While an overlay (lightbox, TOC drawer) locks page scrolling: keep the
+   scrollbar's space so the page does not shift, and paint that strip like the
+   overlay's scrim. */
+html.scroll-locked,
+html:has(.lightbox[open]) {
+  overflow: hidden;
   scrollbar-gutter: stable;
 }
 
-/* Anchor targets in the page content land below the sticky header. (Not
-   scroll-padding on <html>: that also makes the browser scroll when focusing
-   header controls. Not every [id]: search results etc. scroll in their own box.) */
+html.scroll-locked {
+  background-color: var(--scrim-drawer);
+}
+
+html:has(.lightbox[open]) {
+  background-color: var(--scrim-lightbox);
+}
+
+/* Anchor targets in the page content (and the skip-link target) land below
+   the sticky header. Not scroll-padding on <html>: that also makes the browser
+   scroll when focusing header controls. Not every [id]: search results scroll
+   inside their own box. */
+main {
+  scroll-margin-top: var(--header-h);
+}
+
 main [id] {
   scroll-margin-top: calc(var(--header-h) + 20px);
 }

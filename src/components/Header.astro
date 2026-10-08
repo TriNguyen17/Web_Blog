@@ -277,13 +277,15 @@ const isActive = (href: string) => {
       if ((e.target as HTMLElement).closest('a')) setOpen(false);
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && nav.dataset.open === 'true') {
+      // defaultPrevented: Esc already closed a dialog on top (search).
+      if (e.key === 'Escape' && !e.defaultPrevented && nav.dataset.open === 'true') {
         setOpen(false);
         toggle.focus({ preventScroll: true });
       }
     });
     document.addEventListener('click', (e) => {
-      const target = e.target as Node;
+      const target = e.target as Element;
+      if (target.closest?.('dialog')) return; // clicks inside the search dialog
       if (nav.dataset.open === 'true' && !nav.contains(target) && !toggle.contains(target)) setOpen(false);
     });
     // Tabbing out of the open menu closes it (but not when a dialog such as
@@ -295,4 +297,18 @@ const isActive = (href: string) => {
       setOpen(false);
     });
   }
+
+  // Keyboard focus moving up the page can land under the sticky header (the
+  // browser scrolls the element to the very top). Nudge it back into view.
+  const header = document.querySelector<HTMLElement>('.site-header');
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (!header || !(el instanceof HTMLElement) || !el.closest('main') || el.closest('#toc, dialog')) return;
+    if (!el.matches(':focus-visible')) return;
+    requestAnimationFrame(() => {
+      const headerBottom = header.getBoundingClientRect().bottom;
+      const top = el.getBoundingClientRect().top;
+      if (top < headerBottom + 8) window.scrollBy({ top: top - headerBottom - 16, behavior: 'instant' });
+    });
+  });
 </script>
