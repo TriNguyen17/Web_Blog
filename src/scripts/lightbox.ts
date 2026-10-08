@@ -42,6 +42,7 @@ export function initLightbox() {
   const albumEl = dialog.querySelector<HTMLAnchorElement>('[data-lb-album]')!;
   const prevBtn = dialog.querySelector<HTMLButtonElement>('[data-lb-prev]')!;
   const nextBtn = dialog.querySelector<HTMLButtonElement>('[data-lb-next]')!;
+  const statusEl = dialog.querySelector<HTMLElement>('[data-lb-status]');
 
   let slides: Slide[] = [];
   let pos = 0;
@@ -70,7 +71,7 @@ export function initLightbox() {
     if (s) new Image().src = s.src;
   };
 
-  function show(i: number) {
+  function show(i: number, announce = true) {
     pos = (i + slides.length) % slides.length;
     const slide = slides[pos];
 
@@ -100,6 +101,9 @@ export function initLightbox() {
       albumEl.textContent = `Album: ${slide.album} →`;
     }
 
+    // Announce slide changes (not the first open: the dialog itself is announced).
+    if (statusEl) statusEl.textContent = announce ? `${pos + 1} / ${slides.length}: ${slide.alt}` : '';
+
     const many = slides.length > 1;
     prevBtn.hidden = !many;
     nextBtn.hidden = !many;
@@ -114,7 +118,7 @@ export function initLightbox() {
     const index = slides.findIndex((s) => s.button === button);
     if (index < 0) return;
     lastFocus = button;
-    show(index);
+    show(index, false);
     dialog!.showModal();
   }
 
@@ -142,7 +146,7 @@ export function initLightbox() {
   });
 
   dialog.addEventListener('close', () => {
-    img!.removeAttribute('src');
+    img!.src = 'data:,';
     lastFocus?.focus({ preventScroll: true });
   });
 

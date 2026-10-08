@@ -6,13 +6,13 @@
  *   - cards    [data-type][data-tags]            inside [data-filter-items]
  *   - optional [data-filter-empty]               empty-state element
  *
- * A chip matches a card when its value equals the card's `data-type`
- * OR appears (slugified) in the card's `data-tags`.
+ * A chip matches a card when its value equals the card's `data-type`, is one
+ * of its `data-cats` (CTF categories) or appears (slugified) in `data-tags`.
  */
 const slug = (s: string) =>
   s
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/gi, 'd')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -29,6 +29,7 @@ function setup(root: HTMLElement) {
     cards.map((card) => {
       const values = new Set<string>();
       if (card.dataset.type) values.add(card.dataset.type);
+      for (const cat of (card.dataset.cats ?? '').split(',')) if (cat) values.add(cat);
       for (const tag of (card.dataset.tags ?? '').split(',')) if (tag) values.add(slug(tag));
       return [card, values];
     }),

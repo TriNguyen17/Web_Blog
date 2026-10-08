@@ -83,6 +83,7 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
 
   .board__title::before {
     content: '$ ls ./challenges';
+    content: '$ ls ./challenges' / '';
     display: block;
     margin-bottom: 4px;
     font-size: 0.75rem;
@@ -111,11 +112,21 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
     align-items: start;
   }
 
+  /* Each group spans two rows of the parent grid (title, cards) via subgrid,
+     so cards line up even when a category title wraps to two lines. */
+  .board__group {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: 10px;
+  }
+
   .board__cat {
     display: flex;
     align-items: center;
+    align-self: end;
     gap: 10px;
-    margin: 0 0 10px;
+    margin: 0;
     font-family: var(--font-mono);
     font-size: 0.78rem;
     font-weight: 600;
@@ -165,7 +176,8 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
     justify-content: center;
     gap: 4px;
     min-height: 100px;
-    padding: 16px 12px 14px;
+    /* Side padding keeps the name clear of the solved badge. */
+    padding: 16px 32px 14px;
     text-align: center;
     color: var(--text);
     background: color-mix(in srgb, var(--accent) 14%, var(--surface));
@@ -204,7 +216,7 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
 
   .board-card__diff {
     font-size: 0.68rem;
-    color: var(--text-muted);
+    color: var(--text);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
@@ -232,10 +244,6 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
   @media (max-width: 600px) {
     .board {
       padding: 16px;
-    }
-
-    .board__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 </style>

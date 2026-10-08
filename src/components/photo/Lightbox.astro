@@ -9,7 +9,7 @@ import Icon from '../Icon.astro';
     </button>
 
     <figure class="lightbox__figure">
-      <img class="lightbox__img" id="lightbox-img" alt="" />
+      <img class="lightbox__img" id="lightbox-img" src="data:," alt="" />
       <figcaption class="lightbox__info" id="lightbox-info">
         <p class="lightbox__caption" data-lb-caption></p>
         <div class="lightbox__sub">
@@ -19,6 +19,7 @@ import Icon from '../Icon.astro';
         <ul class="tags lightbox__tags" data-lb-tags></ul>
         <a class="lightbox__album" data-lb-album hidden></a>
       </figcaption>
+      <p class="sr-only" role="status" data-lb-status></p>
     </figure>
 
     <button class="lightbox__nav lightbox__nav--next" type="button" data-lb-next aria-label="Ảnh kế tiếp">
@@ -187,8 +188,14 @@ import Icon from '../Icon.astro';
   }
 
   @media (max-width: 600px) {
+    /* Reserve room for the close button (top) and prev/next (bottom). */
+    .lightbox__stage {
+      padding-top: 60px;
+      padding-bottom: 84px;
+    }
+
     .lightbox__img {
-      max-height: 64dvh;
+      max-height: calc(100dvh - 330px);
     }
 
     .lightbox__nav {
@@ -205,6 +212,73 @@ import Icon from '../Icon.astro';
     .lightbox__nav--next {
       right: 50%;
       margin-right: -58px;
+    }
+  }
+
+  /* Tablet and desktop: keep the image clear of the side arrows and of the
+     close button. */
+  @media (min-width: 601px) {
+    .lightbox__stage {
+      padding-top: 64px;
+    }
+
+    .lightbox__figure {
+      max-width: min(1100px, calc(100vw - 2 * (clamp(8px, 2vw, 28px) + 60px)));
+    }
+
+    .lightbox__img {
+      max-height: calc(100dvh - 280px);
+    }
+  }
+
+  /* Short landscape screens (phones turned sideways, any width): image and
+     caption side by side, arrows back at the sides, so the photo keeps a
+     useful size and the tags / album link stay on screen. */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .lightbox__stage {
+      padding: 12px calc(clamp(8px, 2vw, 28px) + 56px);
+    }
+
+    .lightbox__figure {
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+      max-width: 100%;
+    }
+
+    .lightbox__img {
+      max-width: 58%;
+      max-height: calc(100dvh - 24px);
+    }
+
+    .lightbox__info {
+      flex: 1;
+      min-width: 0;
+      max-height: calc(100dvh - 24px);
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    .lightbox__sub,
+    .lightbox__tags {
+      justify-content: flex-start;
+    }
+
+    .lightbox__nav {
+      top: 50%;
+      bottom: auto;
+      margin: 0;
+      transform: translateY(-50%);
+    }
+
+    .lightbox__nav--prev {
+      left: clamp(8px, 2vw, 28px);
+      right: auto;
+    }
+
+    .lightbox__nav--next {
+      right: clamp(8px, 2vw, 28px);
+      left: auto;
     }
   }
 </style>

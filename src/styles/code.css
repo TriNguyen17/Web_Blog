@@ -31,9 +31,14 @@
   text-decoration: var(--shiki-light-text-decoration);
 }
 
-/* Slightly darker than the page so blocks stand out */
+/* Dark: slightly darker than the page so blocks stand out. Light: white,
+   which the github-light-default token colours are designed for. */
 .astro-code {
   background-color: var(--bg-sidebar);
+}
+
+:root[data-theme='light'] .astro-code {
+  background-color: #ffffff;
 }
 
 .astro-code code {

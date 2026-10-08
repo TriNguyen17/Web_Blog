@@ -10,7 +10,11 @@ import Icon from './Icon.astro';
       <input
         id="search-input"
         type="search"
-        placeholder="Tìm write-up, challenge, ảnh… (gõ #tag để lọc)"
+        role="combobox"
+        aria-label="Tìm kiếm bài viết"
+        aria-expanded="false"
+        aria-autocomplete="list"
+        placeholder="Tìm bài viết… (#tag để lọc)"
         autocomplete="off"
         spellcheck="false"
         aria-controls="search-results"
@@ -77,6 +81,11 @@ import Icon from './Icon.astro';
     border-bottom: 1px solid var(--border-soft);
   }
 
+  /* The input itself has no outline, so show focus on its row. */
+  .search-box__input:focus-within {
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
   .search-box__input input {
     flex: 1;
     min-width: 0;
@@ -118,7 +127,7 @@ import Icon from './Icon.astro';
     border: 1px solid transparent;
   }
 
-  .search-results :global([aria-selected='true'] a) {
+  .search-results :global(a[aria-selected='true']) {
     background: var(--accent-softer);
     border-color: var(--accent-border);
   }
@@ -163,7 +172,7 @@ import Icon from './Icon.astro';
   }
 
   .search-results :global(mark) {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     border-radius: 3px;
   }

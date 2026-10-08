@@ -41,8 +41,9 @@ export default defineConfig({
     }),
     shikiConfig: {
       // Dual theme: colours are emitted as CSS variables and switched
-      // by [data-theme] in src/styles/code.css.
-      themes: { light: 'github-light', dark: 'github-dark' },
+      // by [data-theme] in src/styles/code.css. The "-default" GitHub themes
+      // keep every token at 4.5:1 or more on the code block backgrounds.
+      themes: { light: 'github-light-default', dark: 'github-dark-default' },
       defaultColor: false,
       langAlias: { nasm: 'asm', x86asm: 'asm' },
     },

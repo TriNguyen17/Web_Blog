@@ -13,10 +13,11 @@ const isActive = (href: string) => {
 
 <header class="site-header">
   <div class="container site-header__inner">
-    <a class="brand" href={url('/')} aria-label={`${SITE.author} — trang chủ`}>
+    <a class="brand" href={url('/')}>
       <span class="brand__path">~/{SITE.brand}</span>
-      <span class="brand__prompt">$</span>
+      <span class="brand__prompt" aria-hidden="true">$</span>
       <span class="brand__cursor" aria-hidden="true"></span>
+      <span class="sr-only">— trang chủ</span>
     </a>
 
     <nav class="site-nav" id="site-nav" aria-label="Điều hướng chính" data-open="false">
@@ -34,10 +35,10 @@ const isActive = (href: string) => {
     </nav>
 
     <div class="site-header__actions">
-      <button class="search-trigger" type="button" data-search-open aria-label="Tìm kiếm bài viết">
+      <button class="search-trigger" type="button" data-search-open aria-keyshortcuts="Control+K /">
         <Icon name="search" size={16} />
         <span class="search-trigger__label">Tìm kiếm…</span>
-        <kbd class="search-trigger__kbd">Ctrl K</kbd>
+        <kbd class="search-trigger__kbd" aria-hidden="true">Ctrl K</kbd>
       </button>
       <ThemeToggle />
       <button
@@ -60,10 +61,17 @@ const isActive = (href: string) => {
     top: 0;
     z-index: 50;
     height: var(--header-h);
-    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
     backdrop-filter: saturate(160%) blur(12px);
-    -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid var(--border-soft);
+  }
+
+  /* Older Safari only supports the prefixed property. Kept in its own rule:
+     the minifier merges a prefixed/unprefixed pair into one declaration. */
+  @supports (-webkit-backdrop-filter: none) {
+    .site-header {
+      -webkit-backdrop-filter: saturate(160%) blur(12px);
+    }
   }
 
   .site-header__inner {
@@ -140,6 +148,7 @@ const isActive = (href: string) => {
 
   .site-nav a[aria-current='page']::before {
     content: './';
+    content: './' / '';
     opacity: 0.6;
   }
 
@@ -180,9 +189,18 @@ const isActive = (href: string) => {
   }
 
   @media (max-width: 860px) {
-    .search-trigger__label,
     .search-trigger__kbd {
       display: none;
+    }
+
+    /* Visually hidden but still the button's accessible name. */
+    .search-trigger__label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     .search-trigger {
@@ -214,6 +232,10 @@ const isActive = (href: string) => {
       transform: none;
       opacity: 1;
       visibility: visible;
+      transition:
+        opacity 0.18s var(--ease),
+        transform 0.18s var(--ease),
+        visibility 0s;
     }
 
     .site-nav ul {
@@ -236,6 +258,18 @@ const isActive = (href: string) => {
       nav.dataset.open = String(open);
       toggle.setAttribute('aria-expanded', String(open));
       toggle.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu');
+      // Move keyboard focus into the menu once it is visible (retry a few
+      // frames; preventScroll: the menu is fixed, nothing needs scrolling).
+      if (open) {
+        let tries = 0;
+        const focusIn = () => {
+          const link = nav.querySelector<HTMLElement>('a');
+          if (!link) return;
+          link.focus({ preventScroll: true });
+          if (document.activeElement !== link && tries++ < 10) requestAnimationFrame(focusIn);
+        };
+        requestAnimationFrame(focusIn);
+      }
     };
 
     toggle.addEventListener('click', () => setOpen(nav.dataset.open !== 'true'));
@@ -243,14 +277,38 @@ const isActive = (href: string) => {
       if ((e.target as HTMLElement).closest('a')) setOpen(false);
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && nav.dataset.open === 'true') {
+      // defaultPrevented: Esc already closed a dialog on top (search).
+      if (e.key === 'Escape' && !e.defaultPrevented && nav.dataset.open === 'true') {
         setOpen(false);
-        toggle.focus();
+        toggle.focus({ preventScroll: true });
       }
     });
     document.addEventListener('click', (e) => {
-      const target = e.target as Node;
+      const target = e.target as Element;
+      if (target.closest?.('dialog')) return; // clicks inside the search dialog
       if (nav.dataset.open === 'true' && !nav.contains(target) && !toggle.contains(target)) setOpen(false);
     });
+    // Tabbing out of the open menu closes it (but not when a dialog such as
+    // search opens on top: focus returns to the menu when it closes).
+    nav.addEventListener('focusout', (e) => {
+      const next = e.relatedTarget as HTMLElement | null;
+      if (nav.dataset.open !== 'true' || !next || nav.contains(next) || next === toggle) return;
+      if (next.closest('dialog')) return;
+      setOpen(false);
+    });
   }
+
+  // Keyboard focus moving up the page can land under the sticky header (the
+  // browser scrolls the element to the very top). Nudge it back into view.
+  const header = document.querySelector<HTMLElement>('.site-header');
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (!header || !(el instanceof HTMLElement) || !el.closest('main') || el.closest('#toc, dialog')) return;
+    if (!el.matches(':focus-visible')) return;
+    requestAnimationFrame(() => {
+      const headerBottom = header.getBoundingClientRect().bottom;
+      const top = el.getBoundingClientRect().top;
+      if (top < headerBottom + 8) window.scrollBy({ top: top - headerBottom - 16, behavior: 'instant' });
+    });
+  });
 </script>

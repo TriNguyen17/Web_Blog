@@ -294,6 +294,13 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
     visibility: hidden;
   }
 
+  /* The sub-list clips overflow (for the collapse animation), so keep the
+     focus ring inside the link box. */
+  .toc__sublink:focus-visible,
+  .toc__link:focus-visible {
+    outline-offset: -2px;
+  }
+
   .toc__sublink {
     position: relative;
     display: block;
@@ -309,18 +316,19 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
       background-color 0.15s;
   }
 
-  /* Active states (set by the scroll spy) */
+  /* Active states (set by the scroll spy). --accent-text keeps 4.5:1 on the
+     accent tints in the light theme. */
   .toc__item.is-active > .toc__row .toc__link,
   .toc__overview[aria-current='location'] {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   .toc__item.is-active > .toc__row .toc__pts {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   .toc__link[aria-current='location'] {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   .toc__item.is-active > .toc__row {
@@ -328,7 +336,7 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
   }
 
   .toc__sublink[aria-current='location'] {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
@@ -391,9 +399,14 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
         visibility 0.28s;
     }
 
+    /* Become visible at once when opening (so focus can move in), but stay
+       visible until the slide-out has finished when closing. */
     .toc[data-open='true'] {
       transform: none;
       visibility: visible;
+      transition:
+        transform 0.28s var(--ease),
+        visibility 0s;
     }
 
     .toc__close {

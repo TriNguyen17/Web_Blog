@@ -58,6 +58,7 @@ const tags = allPhotoPostTags(entry);
 
       <PhotoGallery items={galleryItems(entry)} />
 
+      {(prev || next) && (
       <nav class="post-nav" aria-label="Album khác">
         {
           prev ? (
@@ -78,6 +79,7 @@ const tags = allPhotoPostTags(entry);
           )
         }
       </nav>
+      )}
     </div>
   </article>
 

@@ -38,7 +38,7 @@ const fold = (s: string) =>
     .normalize('NFC')
     .replace(/[đĐ]/g, 'd')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
 function prepare(doc: SearchDoc): PreparedDoc {
@@ -131,13 +131,16 @@ export function initSearch() {
         status.textContent = 'Không tải được chỉ mục tìm kiếm.';
       }));
 
-  const items = () => [...list.querySelectorAll<HTMLLIElement>('li')];
+  // ARIA combobox pattern: focus stays in the input, the highlighted result is
+  // exposed through aria-activedescendant. Each result link is the option.
+  const options = () => [...list.querySelectorAll<HTMLAnchorElement>('[role="option"]')];
 
   function select(index: number) {
-    const all = items();
+    const all = options();
     if (!all.length) return;
     active = (index + all.length) % all.length;
-    all.forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
+    all.forEach((opt, i) => opt.setAttribute('aria-selected', String(i === active)));
+    input!.setAttribute('aria-activedescendant', all[active].id);
     all[active].scrollIntoView({ block: 'nearest' });
   }
 
@@ -166,10 +169,13 @@ export function initSearch() {
     list!.replaceChildren(
       ...results.map(({ p }, i) => {
         const li = document.createElement('li');
-        li.setAttribute('role', 'option');
-        li.setAttribute('aria-selected', String(i === 0));
+        li.setAttribute('role', 'none');
         const a = document.createElement('a');
         a.href = p.doc.url;
+        a.id = `search-opt-${i}`;
+        a.tabIndex = -1;
+        a.setAttribute('role', 'option');
+        a.setAttribute('aria-selected', String(i === 0));
 
         const head = document.createElement('div');
         head.className = 'sr-head';
@@ -196,6 +202,9 @@ export function initSearch() {
       }),
     );
     active = 0;
+    input!.setAttribute('aria-expanded', String(results.length > 0));
+    if (results.length) input!.setAttribute('aria-activedescendant', 'search-opt-0');
+    else input!.removeAttribute('aria-activedescendant');
   }
 
   async function open() {
@@ -210,6 +219,20 @@ export function initSearch() {
   }
 
   document.querySelectorAll('[data-search-open]').forEach((btn) => btn.addEventListener('click', open));
+  // If the element that opened the dialog is gone or hidden, don't leave
+  // focus on <body>: fall back to the visible search button.
+  // Checked a frame later: the browser restores focus (or drops it) after
+  // 'close' has fired.
+  dialog.addEventListener('close', () =>
+    requestAnimationFrame(() => {
+      const a = document.activeElement;
+      if (a && a !== document.body && !dialog.contains(a) && a.getClientRects().length) return;
+      const trigger = [...document.querySelectorAll<HTMLElement>('[data-search-open]')].find(
+        (el) => el.getClientRects().length > 0,
+      );
+      trigger?.focus({ preventScroll: true });
+    }),
+  );
   dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close());
 
   // Click on the backdrop closes the dialog.
@@ -223,12 +246,16 @@ export function initSearch() {
       e.preventDefault();
       select(active + (e.key === 'ArrowDown' ? 1 : -1));
     } else if (e.key === 'Enter') {
-      const link = items()[active]?.querySelector('a');
+      const link = options()[active];
       if (link) {
         e.preventDefault();
         dialog.close();
         link.click();
       }
+    } else if (e.key === 'Escape') {
+      // type="search" would otherwise only clear the text on the first Esc.
+      e.preventDefault();
+      dialog.close();
     }
   });
 

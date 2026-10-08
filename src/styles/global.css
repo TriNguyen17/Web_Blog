@@ -12,10 +12,11 @@
   --border-soft: #21262d;
   --text: #e6edf3;
   --text-muted: #8b949e;
-  --text-faint: #6e7681;
+  --text-faint: #848d97;
 
   --accent: #39d353;
   --accent-strong: #5ae672;
+  --accent-text: #39d353;
   --accent-ink: #03140a;
   --accent-soft: rgb(57 211 83 / 0.1);
   --accent-softer: rgb(57 211 83 / 0.06);
@@ -24,6 +25,9 @@
 
   --shadow: 0 10px 30px rgb(1 4 9 / 0.55);
   --overlay: rgb(1 4 9 / 0.72);
+  /* --overlay / the lightbox backdrop, flattened over --bg */
+  --scrim-drawer: #05080d;
+  --scrim-lightbox: #02050a;
 
   --cat-re: #d2a8ff;
   --cat-forensics: #39c5cf;
@@ -53,10 +57,11 @@
   --border-soft: #e4e8ec;
   --text: #1f2328;
   --text-muted: #59636e;
-  --text-faint: #818b98;
+  --text-faint: #656d76;
 
   --accent: #1a7f37;
   --accent-strong: #116329;
+  --accent-text: #116329;
   --accent-ink: #ffffff;
   --accent-soft: rgb(26 127 55 / 0.1);
   --accent-softer: rgb(26 127 55 / 0.05);
@@ -65,6 +70,8 @@
 
   --shadow: 0 10px 30px rgb(31 35 40 / 0.12);
   --overlay: rgb(31 35 40 / 0.55);
+  --scrim-drawer: #848689;
+  --scrim-lightbox: #1a1d22;
 
   --cat-re: #8250df;
   --cat-forensics: #1b7c83;
@@ -77,11 +84,12 @@
   --cat-mobile: #1a7f37;
   --cat-hardware: #bc4c00;
 
-  --diff-baby: #1a7f37;
-  --diff-easy: #1a7f37;
-  --diff-medium: #9a6700;
-  --diff-hard: #cf222e;
-  --diff-insane: #8250df;
+  /* Darker than the category colours: they sit on accent-tinted headers. */
+  --diff-baby: #116329;
+  --diff-easy: #116329;
+  --diff-medium: #7d4e00;
+  --diff-hard: #a40e26;
+  --diff-insane: #6639ba;
 }
 
 :root {
@@ -116,7 +124,35 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-padding-top: calc(var(--header-h) + 16px);
+}
+
+/* While an overlay (lightbox, TOC drawer) locks page scrolling: keep the
+   scrollbar's space so the page does not shift, and paint that strip like the
+   overlay's scrim. */
+html.scroll-locked,
+html:has(.lightbox[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+html.scroll-locked {
+  background-color: var(--scrim-drawer);
+}
+
+html:has(.lightbox[open]) {
+  background-color: var(--scrim-lightbox);
+}
+
+/* Anchor targets in the page content (and the skip-link target) land below
+   the sticky header. Not scroll-padding on <html>: that also makes the browser
+   scroll when focusing header controls. Not every [id]: search results scroll
+   inside their own box. */
+main {
+  scroll-margin-top: var(--header-h);
+}
+
+main [id] {
+  scroll-margin-top: calc(var(--header-h) + 20px);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -275,6 +311,7 @@ kbd {
 
 .eyebrow::before {
   content: '>';
+  content: '>' / '';
   opacity: 0.7;
 }
 
@@ -294,6 +331,7 @@ kbd {
 
 .section-title h2::before {
   content: '## ';
+  content: '## ' / '';
   color: var(--accent);
 }
 
@@ -396,7 +434,6 @@ kbd {
 }
 
 .chip__count {
-  opacity: 0.7;
   font-size: 0.72rem;
 }
 
@@ -450,6 +487,11 @@ a.tag:hover {
   height: 6px;
   border-radius: 50%;
   background: var(--c);
+}
+
+/* Light theme: darker text on the light tint so every badge passes 4.5:1. */
+:root[data-theme='light'] .cat-badge {
+  color: color-mix(in srgb, var(--c) 80%, #000);
 }
 
 [data-cat='re'] { --c: var(--cat-re); }
@@ -524,4 +566,18 @@ a.tag:hover {
 
 [hidden] {
   display: none !important;
+}
+
+/* Respect reduced-motion: no transitions, animations or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    /* 0s, not 0.01ms: any running transition would delay visibility changes
+       (and focus) of drawers by a frame. */
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -75,13 +75,21 @@ export function initToc() {
 
   let activeId: string | null = null;
   let lockUntil = 0;
+  // Last heading the reader jumped to (link click or URL hash). Near the
+  // bottom of the page a jump may not bring it up to the activation line, so
+  // it wins while visible, until the reader scrolls by hand.
+  let clickedId: string | null = null;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
   function revealInSidebar(link: HTMLElement) {
     if (mobile.matches && toc!.dataset.open !== 'true') return;
     const box = scroller.getBoundingClientRect();
     const r = link.getBoundingClientRect();
     if (r.top < box.top + 48 || r.bottom > box.bottom - 48) {
-      scroller.scrollTo({ top: scroller.scrollTop + (r.top - box.top) - box.height / 3, behavior: 'smooth' });
+      scroller.scrollTo({
+        top: scroller.scrollTop + (r.top - box.top) - box.height / 3,
+        behavior: reducedMotion.matches ? 'auto' : 'smooth',
+      });
     }
   }
 
@@ -114,9 +122,9 @@ export function initToc() {
 
   // Activation line: a heading counts as "current" once its top passes this
   // many px below the viewport top. It must sit at (or below) where an anchor
-  // jump actually settles a heading — which is scroll-padding-top (on <html>)
-  // plus the heading's own scroll-margin-top — or a freshly clicked target
-  // would never register as passed. Measured once; refreshed on resize.
+  // jump actually settles a heading — the root's scroll-padding-top plus the
+  // heading's scroll-margin-top — or a freshly clicked target would never
+  // register as passed. Measured once; refreshed on resize.
   let activationLine = 160;
   function measureActivationLine() {
     const spt = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
@@ -125,12 +133,27 @@ export function initToc() {
   }
 
   function currentTarget() {
+    // A heading the reader jumped to stays current while it is on screen,
+    // until they scroll by hand.
+    const clicked = clickedId ? document.getElementById(clickedId) : null;
+    if (clicked) {
+      const top = clicked.getBoundingClientRect().top;
+      if (top >= 0 && top < window.innerHeight) return clicked;
+    }
+
     const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
     if (atBottom) return targets.at(-1) ?? null;
 
+    // Over the last stretch of the page the line slides down, so headings that
+    // can never scroll up to the normal line (the last challenge's steps)
+    // still get their turn before the page bottom.
+    const remaining = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+    const zone = window.innerHeight * 0.6;
+    const line = remaining < zone ? activationLine + (zone - remaining) : activationLine;
+
     let current: HTMLElement | null = null;
     for (const t of targets) {
-      if (t.getBoundingClientRect().top - activationLine <= 0) current = t;
+      if (t.getBoundingClientRect().top - line <= 0) current = t;
       else break;
     }
     return current;
@@ -143,6 +166,18 @@ export function initToc() {
     if (progressBar) progressBar.style.transform = `scaleX(${ratio})`;
   }
 
+  // Desktop: once the footer scrolls into view, shrink the sticky sidebar so
+  // it ends at the footer instead of being pushed up under the site header.
+  const footer = document.querySelector<HTMLElement>('.site-footer');
+  function fitToFooter() {
+    if (mobile.matches || !footer) {
+      toc!.style.height = '';
+      return;
+    }
+    const overlap = Math.max(0, window.innerHeight - footer.getBoundingClientRect().top);
+    toc!.style.height = overlap > 0 ? `calc(100dvh - var(--header-h) - ${overlap}px)` : '';
+  }
+
   let ticking = false;
   function onScroll() {
     if (ticking) return;
@@ -150,6 +185,7 @@ export function initToc() {
     requestAnimationFrame(() => {
       ticking = false;
       updateProgress();
+      fitToFooter();
       if (performance.now() < lockUntil) return;
       setActive(currentTarget()?.id ?? null);
     });
@@ -161,8 +197,32 @@ export function initToc() {
     const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
     const id = a ? decodeURIComponent(a.hash.slice(1)) : '';
     if (!id || !targets.some((t) => t.id === id)) return;
+    clickedId = id;
     setActive(id);
     lockUntil = performance.now() + 1000;
+  });
+  // Arriving through a URL hash (page load, Back/Forward) counts as a click.
+  const fromHash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (!id || !targets.some((t) => t.id === id)) return;
+    clickedId = id;
+    // Back/Forward between two targets that are both visible at the bottom
+    // does not scroll, so apply the highlight directly.
+    setActive(id);
+  };
+  fromHash();
+  window.addEventListener('hashchange', fromHash);
+
+  // Scrolling by hand hands control back to the scroll spy.
+  const releaseClick = () => (clickedId = null);
+  window.addEventListener('wheel', releaseClick, { passive: true });
+  window.addEventListener('touchstart', releaseClick, { passive: true });
+  // A press on the page scrollbar targets the root element.
+  window.addEventListener('pointerdown', (e) => {
+    if (e.target === document.documentElement) releaseClick();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) releaseClick();
   });
   window.addEventListener('scrollend', () => {
     lockUntil = 0;
@@ -170,41 +230,85 @@ export function initToc() {
   });
 
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', () => {
-    measureActivationLine();
-    onScroll();
-  }, { passive: true });
+  window.addEventListener(
+    'resize',
+    () => {
+      measureActivationLine();
+      onScroll();
+    },
+    { passive: true },
+  );
   measureActivationLine();
   onScroll();
 
   /* ---------------- mobile drawer ---------------- */
+  const isFocusable = (el: HTMLElement) =>
+    el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+  const focusables = () =>
+    [...toc!.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')].filter(isFocusable);
+
   function setOpen(open: boolean) {
     toc!.dataset.open = String(open);
     fab?.setAttribute('aria-expanded', String(open));
     if (backdrop) backdrop.hidden = !open;
-    document.documentElement.style.overflow = open ? 'hidden' : '';
+    document.documentElement.classList.toggle('scroll-locked', open);
     if (open) {
-      const active = toc!.querySelector<HTMLElement>('[aria-current="location"]') ?? links[0];
-      active?.focus({ preventScroll: true });
-      if (active) revealInSidebar(active);
+      toc!.setAttribute('role', 'dialog');
+      toc!.setAttribute('aria-modal', 'true');
+      // The drawer becomes focusable once it is visible: try for a few frames.
+      let tries = 0;
+      const focusIn = () => {
+        const active = toc!.querySelector<HTMLElement>('[aria-current="location"]');
+        const target = active && isFocusable(active) ? active : focusables()[0];
+        if (target) {
+          target.focus({ preventScroll: true });
+          revealInSidebar(target);
+        } else if (tries++ < 10) {
+          requestAnimationFrame(focusIn);
+        }
+      };
+      requestAnimationFrame(focusIn);
+    } else {
+      toc!.removeAttribute('role');
+      toc!.removeAttribute('aria-modal');
     }
   }
 
+  // Keep Tab / Shift+Tab inside the open drawer.
+  toc.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || toc.dataset.open !== 'true' || !mobile.matches) return;
+    const list = focusables();
+    if (!list.length) return;
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
   fab?.addEventListener('click', () => setOpen(true));
-  document.querySelectorAll('[data-toc-close]').forEach((el) => el.addEventListener('click', () => {
-    setOpen(false);
-    fab?.focus();
-  }));
+  document.querySelectorAll('[data-toc-close]').forEach((el) =>
+    el.addEventListener('click', () => {
+      setOpen(false);
+      fab?.focus({ preventScroll: true });
+    }),
+  );
   toc.addEventListener('click', (e) => {
     if (mobile.matches && (e.target as HTMLElement).closest('a')) setOpen(false);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && toc.dataset.open === 'true') {
+    // defaultPrevented: Esc already closed a dialog on top (search).
+    if (e.key === 'Escape' && !e.defaultPrevented && toc.dataset.open === 'true') {
       setOpen(false);
-      fab?.focus();
+      fab?.focus({ preventScroll: true });
     }
   });
   mobile.addEventListener('change', () => {
     if (!mobile.matches) setOpen(false);
+    fitToFooter();
   });
 }

@@ -14,7 +14,7 @@ export const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 export function slugify(input: string) {
   return input
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/gi, 'd')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -51,14 +51,21 @@ export function splitH2Sections(body = '') {
 
 /** Plain-text version of a Markdown body, for search and descriptions. */
 export function stripMarkdown(body = '') {
+  // Inline code is kept verbatim (`__init__`, `m**3`): park it in placeholders
+  // while Markdown syntax is stripped from the rest.
+  const codes: string[] = [];
   return body
     .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`([^`]*)`/g, '$1')
+    .replace(/`([^`]*)`/g, (_, code: string) => `\u0000${codes.push(code) - 1}\u0000`)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]+>/g, ' ')
+    .replace(/<\/?[a-zA-Z][^>]*>/g, ' ')
     .replace(/^[#>\-*|\s]+/gm, ' ')
-    .replace(/[*_~|]/g, ' ')
+    // Emphasis markers only at word edges, so snake_case names and flags
+    // (dns_3xf1l, render_template_string) stay searchable.
+    .replace(/(?<![\p{L}\p{N}])[*_~]+|[*_~]+(?![\p{L}\p{N}])/gu, '')
+    .replace(/\|/g, ' ')
+    .replace(/\u0000(\d+)\u0000/g, (_, i: string) => codes[Number(i)])
     .replace(/\s+/g, ' ')
     .trim();
 }
