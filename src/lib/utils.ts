@@ -51,16 +51,21 @@ export function splitH2Sections(body = '') {
 
 /** Plain-text version of a Markdown body, for search and descriptions. */
 export function stripMarkdown(body = '') {
+  // Inline code is kept verbatim (`__init__`, `m**3`): park it in placeholders
+  // while Markdown syntax is stripped from the rest.
+  const codes: string[] = [];
   return body
     .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`([^`]*)`/g, '$1')
+    .replace(/`([^`]*)`/g, (_, code: string) => `\u0000${codes.push(code) - 1}\u0000`)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/<\/?[a-zA-Z][^>]*>/g, ' ')
     .replace(/^[#>\-*|\s]+/gm, ' ')
     // Emphasis markers only at word edges, so snake_case names and flags
     // (dns_3xf1l, render_template_string) stay searchable.
-    .replace(/(?<![\p{L}\p{N}])[*_~]+|[*_~]+(?![\p{L}\p{N}])|\|/gu, ' ')
+    .replace(/(?<![\p{L}\p{N}])[*_~]+|[*_~]+(?![\p{L}\p{N}])/gu, '')
+    .replace(/\|/g, ' ')
+    .replace(/\u0000(\d+)\u0000/g, (_, i: string) => codes[Number(i)])
     .replace(/\s+/g, ' ')
     .trim();
 }

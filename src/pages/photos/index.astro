@@ -72,6 +72,11 @@ const filterOptions = [...counts]
   </div>
 
   <Lightbox />
+
+  <script>
+    import { initFilters } from '../../scripts/filter';
+    initFilters();
+  </script>
 </BaseLayout>
 
 <style>
@@ -84,8 +89,3 @@ const filterOptions = [...counts]
     font-size: 0.82rem;
   }
 </style>
-
-<script>
-  import { initFilters } from '../../scripts/filter';
-  initFilters();
-</script>

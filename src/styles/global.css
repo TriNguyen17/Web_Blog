@@ -79,11 +79,12 @@
   --cat-mobile: #1a7f37;
   --cat-hardware: #bc4c00;
 
-  --diff-baby: #1a7f37;
-  --diff-easy: #1a7f37;
-  --diff-medium: #9a6700;
-  --diff-hard: #cf222e;
-  --diff-insane: #8250df;
+  /* Darker than the category colours: they sit on accent-tinted headers. */
+  --diff-baby: #116329;
+  --diff-easy: #116329;
+  --diff-medium: #7d4e00;
+  --diff-hard: #a40e26;
+  --diff-insane: #6639ba;
 }
 
 :root {
@@ -118,7 +119,15 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-padding-top: calc(var(--header-h) + 16px);
+  /* Keeps the layout still when an overlay locks page scrolling. */
+  scrollbar-gutter: stable;
+}
+
+/* Anchor targets in the page content land below the sticky header. (Not
+   scroll-padding on <html>: that also makes the browser scroll when focusing
+   header controls. Not every [id]: search results etc. scroll in their own box.) */
+main [id] {
+  scroll-margin-top: calc(var(--header-h) + 20px);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -539,9 +548,11 @@ a.tag:hover {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 0s !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    /* 0s, not 0.01ms: any running transition would delay visibility changes
+       (and focus) of drawers by a frame. */
+    transition-duration: 0s !important;
     scroll-behavior: auto !important;
   }
 }

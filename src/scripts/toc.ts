@@ -122,9 +122,9 @@ export function initToc() {
 
   // Activation line: a heading counts as "current" once its top passes this
   // many px below the viewport top. It must sit at (or below) where an anchor
-  // jump actually settles a heading — which is scroll-padding-top (on <html>)
-  // plus the heading's own scroll-margin-top — or a freshly clicked target
-  // would never register as passed. Measured once; refreshed on resize.
+  // jump actually settles a heading — the root's scroll-padding-top plus the
+  // heading's scroll-margin-top — or a freshly clicked target would never
+  // register as passed. Measured once; refreshed on resize.
   let activationLine = 160;
   function measureActivationLine() {
     const spt = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
@@ -191,10 +191,22 @@ export function initToc() {
     setActive(id);
     lockUntil = performance.now() + 1000;
   });
+  // Arriving through a URL hash (page load, Back/Forward) counts as a click.
+  const fromHash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (id && targets.some((t) => t.id === id)) clickedId = id;
+  };
+  fromHash();
+  window.addEventListener('hashchange', fromHash);
+
   // Scrolling by hand hands control back to the scroll spy.
   const releaseClick = () => (clickedId = null);
   window.addEventListener('wheel', releaseClick, { passive: true });
   window.addEventListener('touchstart', releaseClick, { passive: true });
+  // A press on the page scrollbar targets the root element.
+  window.addEventListener('pointerdown', (e) => {
+    if (e.target === document.documentElement) releaseClick();
+  });
   window.addEventListener('keydown', (e) => {
     if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) releaseClick();
   });
@@ -229,13 +241,19 @@ export function initToc() {
     if (open) {
       toc!.setAttribute('role', 'dialog');
       toc!.setAttribute('aria-modal', 'true');
-      // Wait a frame so the drawer is visible (and therefore focusable).
-      requestAnimationFrame(() => {
+      // The drawer becomes focusable once it is visible: try for a few frames.
+      let tries = 0;
+      const focusIn = () => {
         const active = toc!.querySelector<HTMLElement>('[aria-current="location"]');
         const target = active && isFocusable(active) ? active : focusables()[0];
-        target?.focus({ preventScroll: true });
-        if (target) revealInSidebar(target);
-      });
+        if (target) {
+          target.focus({ preventScroll: true });
+          revealInSidebar(target);
+        } else if (tries++ < 10) {
+          requestAnimationFrame(focusIn);
+        }
+      };
+      requestAnimationFrame(focusIn);
     } else {
       toc!.removeAttribute('role');
       toc!.removeAttribute('aria-modal');
@@ -259,17 +277,19 @@ export function initToc() {
   });
 
   fab?.addEventListener('click', () => setOpen(true));
-  document.querySelectorAll('[data-toc-close]').forEach((el) => el.addEventListener('click', () => {
-    setOpen(false);
-    fab?.focus();
-  }));
+  document.querySelectorAll('[data-toc-close]').forEach((el) =>
+    el.addEventListener('click', () => {
+      setOpen(false);
+      fab?.focus({ preventScroll: true });
+    }),
+  );
   toc.addEventListener('click', (e) => {
     if (mobile.matches && (e.target as HTMLElement).closest('a')) setOpen(false);
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toc.dataset.open === 'true') {
       setOpen(false);
-      fab?.focus();
+      fab?.focus({ preventScroll: true });
     }
   });
   mobile.addEventListener('change', () => {

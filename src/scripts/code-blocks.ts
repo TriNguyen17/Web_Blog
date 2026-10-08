@@ -5,6 +5,17 @@ const CHECK_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
 /** One shared live region announces the copy result to screen readers. */
+let announceTimer: number | undefined;
+
+function announce(message: string) {
+  const el = liveRegion();
+  clearTimeout(announceTimer);
+  // Clear first so the same message is announced again on a repeated copy.
+  el.textContent = '';
+  requestAnimationFrame(() => (el.textContent = message));
+  announceTimer = window.setTimeout(() => (el.textContent = ''), 1800);
+}
+
 function liveRegion() {
   let el = document.getElementById('code-copy-status');
   if (!el) {
@@ -43,16 +54,15 @@ export function initCodeBlocks(root: ParentNode = document) {
         await navigator.clipboard.writeText(code.replace(/\n$/, ''));
         button.dataset.copied = 'true';
         button.innerHTML = `${CHECK_ICON}<span>copied</span>`;
-        liveRegion().textContent = 'Đã sao chép code';
+        announce('Đã sao chép code');
       } catch {
         button.innerHTML = `${COPY_ICON}<span>failed</span>`;
-        liveRegion().textContent = 'Sao chép thất bại';
+        announce('Sao chép thất bại');
       }
       clearTimeout(timer);
       timer = window.setTimeout(() => {
         button.dataset.copied = 'false';
         button.innerHTML = `${COPY_ICON}<span>copy</span>`;
-        liveRegion().textContent = '';
       }, 1800);
     });
   }

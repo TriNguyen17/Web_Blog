@@ -62,10 +62,16 @@ const isActive = (href: string) => {
     z-index: 50;
     height: var(--header-h);
     background: color-mix(in srgb, var(--bg) 94%, transparent);
-    /* Prefixed first: the minifier keeps only the last of the pair. */
-    -webkit-backdrop-filter: saturate(160%) blur(12px);
     backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid var(--border-soft);
+  }
+
+  /* Older Safari only supports the prefixed property. Kept in its own rule:
+     the minifier merges a prefixed/unprefixed pair into one declaration. */
+  @supports (-webkit-backdrop-filter: none) {
+    .site-header {
+      -webkit-backdrop-filter: saturate(160%) blur(12px);
+    }
   }
 
   .site-header__inner {
@@ -252,8 +258,18 @@ const isActive = (href: string) => {
       nav.dataset.open = String(open);
       toggle.setAttribute('aria-expanded', String(open));
       toggle.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu');
-      // Move keyboard focus into the menu once it is visible.
-      if (open) requestAnimationFrame(() => nav.querySelector<HTMLElement>('a')?.focus());
+      // Move keyboard focus into the menu once it is visible (retry a few
+      // frames; preventScroll: the menu is fixed, nothing needs scrolling).
+      if (open) {
+        let tries = 0;
+        const focusIn = () => {
+          const link = nav.querySelector<HTMLElement>('a');
+          if (!link) return;
+          link.focus({ preventScroll: true });
+          if (document.activeElement !== link && tries++ < 10) requestAnimationFrame(focusIn);
+        };
+        requestAnimationFrame(focusIn);
+      }
     };
 
     toggle.addEventListener('click', () => setOpen(nav.dataset.open !== 'true'));
@@ -263,17 +279,20 @@ const isActive = (href: string) => {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && nav.dataset.open === 'true') {
         setOpen(false);
-        toggle.focus();
+        toggle.focus({ preventScroll: true });
       }
     });
     document.addEventListener('click', (e) => {
       const target = e.target as Node;
       if (nav.dataset.open === 'true' && !nav.contains(target) && !toggle.contains(target)) setOpen(false);
     });
-    // Tabbing out of the open menu closes it.
+    // Tabbing out of the open menu closes it (but not when a dialog such as
+    // search opens on top: focus returns to the menu when it closes).
     nav.addEventListener('focusout', (e) => {
-      const next = e.relatedTarget as Node | null;
-      if (nav.dataset.open === 'true' && next && !nav.contains(next) && next !== toggle) setOpen(false);
+      const next = e.relatedTarget as HTMLElement | null;
+      if (nav.dataset.open !== 'true' || !next || nav.contains(next) || next === toggle) return;
+      if (next.closest('dialog')) return;
+      setOpen(false);
     });
   }
 </script>

@@ -36,6 +36,11 @@ const filterOptions = [
       <p class="empty-state" data-filter-empty hidden>Không có bài viết nào trong danh mục này.</p>
     </div>
   </section>
+
+  <script>
+    import { initFilters } from '../scripts/filter';
+    initFilters();
+  </script>
 </BaseLayout>
 
 <style>
@@ -52,8 +57,3 @@ const filterOptions = [
     color: var(--accent);
   }
 </style>
-
-<script>
-  import { initFilters } from '../scripts/filter';
-  initFilters();
-</script>

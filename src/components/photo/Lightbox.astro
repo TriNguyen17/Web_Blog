@@ -219,6 +219,55 @@ import Icon from '../Icon.astro';
       margin-right: -58px;
     }
   }
+
+  /* Tablet and desktop: keep the image clear of the side arrows and of the
+     close button. */
+  @media (min-width: 601px) {
+    .lightbox__stage {
+      padding-top: 64px;
+    }
+
+    .lightbox__figure {
+      max-width: min(1100px, calc(100vw - 2 * (clamp(8px, 2vw, 28px) + 60px)));
+    }
+
+    .lightbox__img {
+      max-height: calc(100dvh - 280px);
+    }
+  }
+
+  /* Landscape phones: image and caption side by side, so the tags and album
+     link stay on screen. */
+  @media (min-width: 601px) and (max-height: 500px) {
+    .lightbox__stage {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    .lightbox__figure {
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .lightbox__img {
+      max-width: 60%;
+      max-height: calc(100dvh - 24px);
+    }
+
+    .lightbox__info {
+      flex: 1;
+      min-width: 0;
+      max-height: calc(100dvh - 24px);
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    .lightbox__sub,
+    .lightbox__tags {
+      justify-content: flex-start;
+    }
+  }
 </style>
 
 <script>

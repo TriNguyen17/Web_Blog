@@ -14,19 +14,19 @@ cat: <span data-path>…</span>: No such file or directory</code></pre>
       <a class="btn" href={url('/writeups/')}>Xem write-ups</a>
     </div>
   </div>
-</BaseLayout>
 
-<script is:inline>
-  // The 404 page is built once and served for every unknown URL, so the
-  // requested path is filled in on the client.
-  document.querySelectorAll('[data-path]').forEach(function (el) {
-    var p = location.pathname;
-    try {
-      p = decodeURI(p);
-    } catch (e) {}
-    el.textContent = p;
-  });
-</script>
+  <script is:inline>
+    // The 404 page is built once and served for every unknown URL, so the
+    // requested path is filled in on the client.
+    document.querySelectorAll('[data-path]').forEach(function (el) {
+      var p = location.pathname;
+      try {
+        p = decodeURI(p);
+      } catch (e) {}
+      el.textContent = p;
+    });
+  </script>
+</BaseLayout>
 
 <style>
   .notfound {
