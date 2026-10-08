@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import PhotoGallery from '../../components/photo/PhotoGallery.astro';
+import Lightbox from '../../components/photo/Lightbox.astro';
+import { getPhotoPosts, photoPostToFeed, galleryItems } from '../../lib/posts';
+import { slugify } from '../../lib/utils';
+
+const posts = await getPhotoPosts(); // newest album first
+const albums = posts.map(photoPostToFeed);
+const photos = posts.flatMap(galleryItems);
+
+// Tag chips from every photo, most used first.
+const counts = new Map<string, { label: string; count: number }>();
+for (const photo of photos) {
+  for (const tag of photo.tags) {
+    const key = slugify(tag);
+    const entry = counts.get(key) ?? { label: tag, count: 0 };
+    entry.count += 1;
+    counts.set(key, entry);
+  }
+}
+const filterOptions = [...counts]
+  .sort((a, b) => b[1].count - a[1].count || a[1].label.localeCompare(b[1].label))
+  .slice(0, 12)
+  .map(([value, { label, count }]) => ({ value, label: `#${label}`, count }));
+---
+
+<BaseLayout title="Photo Blog" description="Hình ảnh đời thường, những khoảnh khắc nhỏ được ghi lại.">
+  <div class="page container">
+    <header class="page-header">
+      <p class="eyebrow">Photo blog</p>
+      <h1>Những khoảnh khắc</h1>
+      <p>{posts.length} album · {photos.length} tấm ảnh. Click vào ảnh để xem lớn kèm caption, ngày và tag.</p>
+    </header>
+
+    {
+      photos.length === 0 ? (
+        <p class="empty-state">
+          Chưa có album ảnh nào. Thêm file vào <code>src/content/photos/</code>.
+        </p>
+      ) : (
+        <>
+          <section class="photos-section" data-filter-root aria-labelledby="all-photos">
+            <div class="section-title">
+              <h2 id="all-photos">Tất cả ảnh</h2>
+              <span class="muted photos-count">
+                <span data-filter-count>{photos.length}</span> ảnh
+              </span>
+            </div>
+            {filterOptions.length > 1 && <FilterBar options={filterOptions} label="Lọc ảnh theo tag" />}
+            <PhotoGallery items={photos} showAlbumLink eager={6} />
+            <p class="empty-state" data-filter-empty hidden>
+              Không có ảnh nào với tag này.
+            </p>
+          </section>
+
+          <section class="photos-section" aria-labelledby="albums">
+            <div class="section-title">
+              <h2 id="albums">Albums</h2>
+            </div>
+            <div class="card-grid">
+              {albums.map((item) => (
+                <PostCard item={item} />
+              ))}
+            </div>
+          </section>
+        </>
+      )
+    }
+  </div>
+
+  <Lightbox />
+</BaseLayout>
+
+<style>
+  .photos-section + .photos-section {
+    margin-top: 64px;
+  }
+
+  .photos-count {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+  }
+</style>
+
+<script>
+  import { initFilters } from '../../scripts/filter';
+  initFilters();
+</script>

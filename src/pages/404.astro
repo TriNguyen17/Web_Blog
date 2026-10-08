@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { url } from '../lib/utils';
+---
+
+<BaseLayout title="404" description="Trang không tồn tại." noindex>
+  <div class="page container notfound">
+    <pre class="notfound__art"><code>$ cat {Astro.url.pathname}
+cat: {Astro.url.pathname}: No such file or directory</code></pre>
+    <h1>404 — Không tìm thấy trang</h1>
+    <p>Đường dẫn bạn truy cập không tồn tại hoặc đã bị di chuyển.</p>
+    <div class="notfound__actions">
+      <a class="btn btn--primary" href={url('/')}>Về trang chủ</a>
+      <a class="btn" href={url('/writeups/')}>Xem write-ups</a>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .notfound {
+    max-width: 640px;
+    text-align: center;
+    padding-block: 80px;
+  }
+
+  .notfound__art {
+    display: inline-block;
+    margin: 0 auto 28px;
+    padding: 16px 22px;
+    text-align: left;
+    font-size: 0.82rem;
+    color: var(--cat-pwn);
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .notfound h1 {
+    margin: 0 0 10px;
+    font-family: var(--font-mono);
+  }
+
+  .notfound p {
+    color: var(--text-muted);
+  }
+
+  .notfound__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+  }
+</style>

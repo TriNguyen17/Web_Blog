@@ -1,0 +1,47 @@
+---
+import Icon from './Icon.astro';
+---
+
+<button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Chuyển sang giao diện sáng">
+  <Icon name="sun" class="theme-toggle__sun" />
+  <Icon name="moon" class="theme-toggle__moon" />
+</button>
+
+<style>
+  /* The svgs are rendered by <Icon>, outside this component's scope. */
+  .theme-toggle :global(.theme-toggle__moon) {
+    display: none;
+  }
+
+  :global(:root[data-theme='light']) .theme-toggle :global(.theme-toggle__sun) {
+    display: none;
+  }
+
+  :global(:root[data-theme='light']) .theme-toggle :global(.theme-toggle__moon) {
+    display: block;
+  }
+</style>
+
+<script>
+  const root = document.documentElement;
+
+  function sync(button: HTMLButtonElement) {
+    const isDark = root.dataset.theme !== 'light';
+    button.setAttribute('aria-label', isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0d1117' : '#ffffff');
+  }
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
+    sync(button);
+    button.addEventListener('click', () => {
+      const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        /* storage unavailable: the choice lasts for this page only */
+      }
+      sync(button);
+    });
+  }
+</script>

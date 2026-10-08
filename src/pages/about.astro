@@ -1,0 +1,266 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { SITE, SOCIALS, HERO } from '../config';
+import { url } from '../lib/utils';
+import { getWriteups, getPhotoPosts } from '../lib/posts';
+import { CATEGORIES, type CategoryKey } from '../lib/ctf';
+
+const [writeups, photos] = await Promise.all([getWriteups(), getPhotoPosts()]);
+const totalChallenges = writeups.reduce((sum, e) => sum + e.data.challenges.length, 0);
+
+const solvesByCat = new Map<CategoryKey, number>();
+for (const e of writeups) for (const c of e.data.challenges) solvesByCat.set(c.category, (solvesByCat.get(c.category) ?? 0) + 1);
+const topCats = [...solvesByCat].sort((a, b) => b[1] - a[1]);
+
+const stats = [
+  { label: 'Write-ups', value: writeups.length },
+  { label: 'Challenges', value: totalChallenges },
+  { label: 'Albums ảnh', value: photos.length },
+];
+---
+
+<BaseLayout title="About" description={`Giới thiệu về ${SITE.author} và blog.`}>
+  <div class="page container about">
+    <header class="page-header">
+      <p class="eyebrow">cat about.md</p>
+      <h1>Về mình</h1>
+    </header>
+
+    <div class="about__grid">
+      <div class="prose about__bio">
+        <p>{HERO.intro}</p>
+        <p>
+          Mình lập blog này để lưu lại quá trình học và chơi CTF — vừa như một cuốn sổ tay cho chính mình, vừa hy vọng
+          giúp được ai đó đang mắc ở một challenge tương tự. Mỗi write-up mình cố gắng trình bày theo đúng mạch suy
+          nghĩ khi giải: từ lúc nhìn đề, phát hiện lỗ hổng, lên ý tưởng, cho đến script khai thác hoàn chỉnh.
+        </p>
+        <p>
+          Ngoài bàn phím và màn hình terminal, mình thích chụp ảnh. Mục <a href={url('/photos/')}>Photos</a> là nơi mình để
+          những tấm hình đời thường cho nhẹ đầu sau những đêm debug.
+        </p>
+
+        <h2>Mình quan tâm tới</h2>
+        <ul>
+          <li><strong>Reverse Engineering</strong> — tháo gỡ binary, phân tích thuật toán, anti-debug.</li>
+          <li><strong>Digital Forensics</strong> — phân tích pcap, memory dump, điều tra sự cố.</li>
+          <li>Web Exploitation, Cryptography và một chút Pwn.</li>
+        </ul>
+
+        {
+          topCats.length > 0 && (
+            <>
+              <h2>Số challenge đã giải theo category</h2>
+              <ul class="about__cats">
+                {topCats.map(([cat, n]) => (
+                  <li>
+                    <span class="cat-badge" data-cat={cat.toLowerCase()}>
+                      {cat}
+                    </span>
+                    <span class="about__cat-name">{CATEGORIES[cat].name}</span>
+                    <span class="about__cat-n">{n}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+      </div>
+
+      <aside class="about__side">
+        <div class="stat-card">
+          <h2 class="about__side-title">Thống kê</h2>
+          <ul class="stats">
+            {
+              stats.map((s) => (
+                <li>
+                  <span class="stats__value">{s.value}</span>
+                  <span class="stats__label">{s.label}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="links-card">
+          <h2 class="about__side-title">Liên hệ & profile</h2>
+          <ul class="link-list">
+            {
+              SOCIALS.map((s) => (
+                <li>
+                  <a href={s.url} target="_blank" rel="me noopener">
+                    <span class="link-list__icon">
+                      <Icon name={s.icon} size={18} />
+                    </span>
+                    <span class="link-list__text">
+                      <span class="link-list__name">{s.name}</span>
+                      <span class="link-list__handle">{s.handle}</span>
+                    </span>
+                    <Icon name="external" size={14} />
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .about__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .about__cats {
+    list-style: none;
+    padding: 0;
+  }
+
+  .about__cats li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .about__cat-name {
+    color: var(--text-muted);
+  }
+
+  .about__cat-n {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .about__side {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    display: grid;
+    gap: 20px;
+  }
+
+  .stat-card,
+  .links-card {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .about__side-title {
+    margin: 0 0 14px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .about__side-title::before {
+    content: '// ';
+    color: var(--accent);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+  }
+
+  .stats li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 4px;
+    background: var(--bg-sidebar);
+    border-radius: var(--radius);
+  }
+
+  .stats__value {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stats__label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .link-list {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .link-list a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    color: var(--text);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+
+  .link-list a:hover {
+    background: var(--bg-sidebar);
+    border-color: var(--accent-border);
+  }
+
+  .link-list__icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    color: var(--accent);
+    background: var(--accent-softer);
+    border-radius: var(--radius);
+  }
+
+  .link-list__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+  }
+
+  .link-list__name {
+    font-weight: 600;
+  }
+
+  .link-list__handle {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--text-faint);
+  }
+
+  .link-list a > :global(svg:last-child) {
+    margin-left: auto;
+    color: var(--text-faint);
+  }
+
+  @media (max-width: 860px) {
+    .about__grid {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+
+    .about__side {
+      position: static;
+    }
+  }
+</style>

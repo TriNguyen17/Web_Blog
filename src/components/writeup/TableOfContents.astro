@@ -1,0 +1,438 @@
+---
+import { CATEGORIES, categorySlug, type TocGroup } from '../../lib/ctf';
+import Icon from '../Icon.astro';
+
+interface Props {
+  toc: TocGroup[];
+  ctfName: string;
+}
+
+const { toc, ctfName } = Astro.props;
+const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).length;
+---
+
+<aside class="toc" id="toc" aria-label="Mục lục" data-open="false">
+  <div class="toc__head">
+    <div>
+      <p class="toc__label">Mục lục</p>
+      <p class="toc__ctf">{ctfName} · {challengeCount} challenges</p>
+    </div>
+    <div class="toc__tools">
+      <button class="toc__tool" type="button" data-toc-expand-all title="Mở rộng tất cả" aria-label="Mở rộng tất cả">
+        <Icon name="expand" size={16} />
+      </button>
+      <button class="toc__tool" type="button" data-toc-collapse-all title="Thu gọn tất cả" aria-label="Thu gọn tất cả">
+        <Icon name="collapse" size={16} />
+      </button>
+      <button class="toc__tool toc__close" type="button" data-toc-close aria-label="Đóng mục lục">
+        <Icon name="close" size={18} />
+      </button>
+    </div>
+  </div>
+
+  <nav class="toc__scroll" data-toc-scroll>
+    <a class="toc__overview" href="#challenge-board" data-toc-link="challenge-board">
+      <Icon name="terminal" size={14} /> Challenge board
+    </a>
+
+    {
+      toc.map((group) => (
+        <div class="toc__group" data-cat={group.category ? categorySlug(group.category) : undefined}>
+          <p class="toc__group-title">
+            {group.category ? CATEGORIES[group.category].name : 'Khác'}
+            <span class="toc__group-count">{group.items.length}</span>
+          </p>
+          <ul class="toc__list">
+            {group.items.map((item) => (
+              <li class="toc__item" data-toc-item={item.slug} data-expanded="false">
+                <div class="toc__row">
+                  {item.children.length > 0 ? (
+                    <button
+                      class="toc__toggle"
+                      type="button"
+                      aria-expanded="false"
+                      aria-controls={`toc-sub-${item.slug}`}
+                      aria-label={`Mở rộng ${item.text}`}
+                    >
+                      <Icon name="chevron-right" size={14} />
+                    </button>
+                  ) : (
+                    <span class="toc__toggle toc__toggle--empty" />
+                  )}
+                  <a class="toc__link" href={`#${item.slug}`} data-toc-link={item.slug}>
+                    {item.text}
+                  </a>
+                  {item.challenge && <span class="toc__pts">{item.challenge.points}</span>}
+                </div>
+                {item.children.length > 0 && (
+                  <div class="toc__sub" id={`toc-sub-${item.slug}`}>
+                    <ul>
+                      {item.children.map((child) => (
+                        <li>
+                          <a class="toc__sublink" href={`#${child.slug}`} data-toc-link={child.slug}>
+                            {child.text}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+  </nav>
+
+  <div class="toc__foot">
+    <a class="toc__top" href="#top"><Icon name="arrow-up" size={14} /> Lên đầu trang</a>
+    <span class="toc__percent" data-toc-percent>0%</span>
+  </div>
+</aside>
+
+<div class="toc-backdrop" data-toc-close hidden></div>
+<button class="toc-fab" type="button" data-toc-open aria-controls="toc" aria-expanded="false">
+  <Icon name="list" size={18} />
+  <span>Mục lục</span>
+</button>
+
+<style>
+  .toc {
+    position: sticky;
+    top: var(--header-h);
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--header-h));
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-soft);
+    font-family: var(--font-mono);
+  }
+
+  .toc__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 20px 14px 12px 20px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .toc__label {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .toc__ctf {
+    margin: 2px 0 0;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  .toc__tools {
+    display: flex;
+    gap: 2px;
+  }
+
+  .toc__tool {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: var(--text-faint);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .toc__tool:hover {
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  .toc__close {
+    display: none;
+  }
+
+  .toc__scroll {
+    flex: 1;
+    min-height: 0;
+    padding: 12px 10px 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .toc__overview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    border-radius: 6px;
+  }
+
+  .toc__group {
+    margin-top: 14px;
+  }
+
+  .toc__group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 6px;
+    padding: 0 10px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c, var(--text-faint));
+  }
+
+  .toc__group-count {
+    margin-left: auto;
+    font-weight: 400;
+    color: var(--text-faint);
+  }
+
+  .toc__list,
+  .toc__sub ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .toc__row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: 6px;
+    transition: background-color 0.15s;
+  }
+
+  .toc__row:hover {
+    background: var(--surface);
+  }
+
+  .toc__toggle {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 30px;
+    padding: 0;
+    color: var(--text-faint);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .toc__toggle :global(svg) {
+    transition: transform 0.2s var(--ease);
+  }
+
+  .toc__item[data-expanded='true'] > .toc__row .toc__toggle :global(svg) {
+    transform: rotate(90deg);
+  }
+
+  .toc__toggle--empty {
+    cursor: default;
+  }
+
+  .toc__link {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--text-muted);
+    transition: color 0.15s;
+  }
+
+  .toc__pts {
+    flex: none;
+    padding: 0 8px;
+    font-size: 0.7rem;
+    color: var(--text-faint);
+  }
+
+  .toc__overview:hover,
+  .toc__link:hover,
+  .toc__sublink:hover {
+    color: var(--text);
+  }
+
+  /* Collapsible sub-sections: animated with grid-template-rows. Without JS
+     (no `html.js`) they stay open so every link is reachable. */
+  .toc__sub {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 0.25s var(--ease),
+      visibility 0.25s;
+  }
+
+  .toc__sub > ul {
+    min-height: 0;
+    overflow: hidden;
+    margin-left: 23px;
+    border-left: 1px solid var(--border);
+  }
+
+  :global(.js) .toc__item:not([data-expanded='true']) > .toc__sub {
+    grid-template-rows: 0fr;
+    visibility: hidden;
+  }
+
+  .toc__sublink {
+    position: relative;
+    display: block;
+    margin: 1px 0;
+    padding: 5px 10px 5px 14px;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--text-faint);
+    border-radius: 0 6px 6px 0;
+    transition:
+      color 0.15s,
+      background-color 0.15s;
+  }
+
+  /* Active states (set by the scroll spy) */
+  .toc__item.is-active > .toc__row .toc__link,
+  .toc__overview[aria-current='location'] {
+    color: var(--accent);
+  }
+
+  .toc__item.is-active > .toc__row .toc__pts {
+    color: var(--accent);
+  }
+
+  .toc__link[aria-current='location'] {
+    color: var(--accent);
+  }
+
+  .toc__item.is-active > .toc__row {
+    background: var(--accent-softer);
+  }
+
+  .toc__sublink[aria-current='location'] {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .toc__sublink[aria-current='location']::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .toc__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .toc__top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-faint);
+  }
+
+  .toc__top:hover {
+    color: var(--accent);
+  }
+
+  .toc__percent {
+    color: var(--accent);
+  }
+
+  .toc-fab,
+  .toc-backdrop {
+    display: none;
+  }
+
+  /* ---------- Mobile / tablet: off-canvas drawer ---------- */
+  @media (max-width: 1023px) {
+    .toc {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 70;
+      width: min(340px, 86vw);
+      height: 100dvh;
+      border-right: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transform: translateX(-102%);
+      visibility: hidden;
+      transition:
+        transform 0.28s var(--ease),
+        visibility 0.28s;
+    }
+
+    .toc[data-open='true'] {
+      transform: none;
+      visibility: visible;
+    }
+
+    .toc__close {
+      display: grid;
+    }
+
+    .toc-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: var(--overlay);
+      backdrop-filter: blur(2px);
+    }
+
+    .toc-fab {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 40;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 44px;
+      padding: 0 18px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-ink);
+      background: var(--accent);
+      border: 0;
+      border-radius: 999px;
+      box-shadow: var(--shadow), var(--accent-glow);
+      cursor: pointer;
+    }
+  }
+</style>
+
+<script>
+  import { initToc } from '../../scripts/toc';
+  initToc();
+</script>

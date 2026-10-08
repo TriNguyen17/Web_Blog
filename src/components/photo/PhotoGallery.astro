@@ -1,0 +1,140 @@
+---
+import { Image } from 'astro:assets';
+import type { GalleryItem } from '../../lib/posts';
+import { formatDate, isoDate } from '../../lib/utils';
+import Icon from '../Icon.astro';
+
+interface Props {
+  items: GalleryItem[];
+  /** Show "Xem album" in the lightbox (used on the all-photos page). */
+  showAlbumLink?: boolean;
+  /** Number of images loaded eagerly (above the fold). */
+  eager?: number;
+}
+
+const { items, showAlbumLink = false, eager = 4 } = Astro.props;
+---
+
+<ul class="masonry" id="photo-grid" data-filter-items>
+  {
+    items.map((item, index) => (
+      <li class="masonry__item" data-type="photo" data-tags={item.tags.join(',')} data-reveal>
+        <button
+          class="shot"
+          type="button"
+          data-caption={item.caption ?? ''}
+          data-alt={item.alt}
+          data-date={isoDate(item.date)}
+          data-date-label={formatDate(item.date)}
+          data-tags={item.tags.join(',')}
+          data-album={showAlbumLink ? item.albumTitle : undefined}
+          data-album-href={showAlbumLink ? item.albumHref : undefined}
+          aria-label={`Xem ảnh lớn: ${item.alt}`}
+        >
+          <Image
+            src={item.src}
+            alt={item.alt}
+            widths={[320, 480, 720, 1200, 1600]}
+            sizes="(min-width: 1100px) 340px, (min-width: 700px) 45vw, 92vw"
+            loading={index < eager ? 'eager' : 'lazy'}
+          />
+          <span class="shot__overlay">
+            <Icon name="search" size={18} />
+            {item.caption && <span class="shot__caption">{item.caption}</span>}
+          </span>
+        </button>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  /* CSS columns masonry: works everywhere and keeps the source (date) order. */
+  .masonry {
+    column-count: 3;
+    column-gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .masonry__item {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 1000px) {
+    .masonry {
+      column-count: 2;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .masonry {
+      column-count: 1;
+    }
+  }
+
+  .shot {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    cursor: zoom-in;
+  }
+
+  .shot :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform 0.5s var(--ease);
+  }
+
+  .shot:hover :global(img),
+  .shot:focus-visible :global(img) {
+    transform: scale(1.05);
+  }
+
+  .shot__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px;
+    color: #fff;
+    text-align: left;
+    background: linear-gradient(0deg, rgb(0 0 0 / 0.72), rgb(0 0 0 / 0) 55%);
+    opacity: 0;
+    transition: opacity 0.25s var(--ease);
+  }
+
+  .shot:hover .shot__overlay,
+  .shot:focus-visible .shot__overlay {
+    opacity: 1;
+  }
+
+  .shot__overlay :global(svg) {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+
+  .shot__caption {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.6);
+  }
+
+  @media (hover: none) {
+    .shot__overlay {
+      opacity: 1;
+      background: linear-gradient(0deg, rgb(0 0 0 / 0.55), transparent 50%);
+    }
+  }
+</style>

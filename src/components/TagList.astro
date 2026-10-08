@@ -1,0 +1,22 @@
+---
+import { tagUrl } from '../lib/posts';
+
+interface Props {
+  tags: string[];
+  /** Render plain text instead of links (e.g. inside a link card). */
+  plain?: boolean;
+  class?: string;
+}
+
+const { tags, plain = false, class: className } = Astro.props;
+---
+
+{
+  tags.length > 0 && (
+    <ul class:list={['tags', className]} aria-label="Tags">
+      {tags.map((tag) => (
+        <li>{plain ? <span class="tag">{tag}</span> : <a class="tag" href={tagUrl(tag)}>{tag}</a>}</li>
+      ))}
+    </ul>
+  )
+}

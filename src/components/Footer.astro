@@ -1,0 +1,79 @@
+---
+import { SITE, SOCIALS } from '../config';
+import { url } from '../lib/utils';
+import Icon from './Icon.astro';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <p class="site-footer__copy">
+      <span class="site-footer__prompt">$</span> echo "© {year} {SITE.author}" ·
+      <a href="https://astro.build" rel="noopener">built with Astro</a>
+    </p>
+    <ul class="site-footer__links" aria-label="Liên kết">
+      {
+        SOCIALS.slice(0, 2).map((s) => (
+          <li>
+            <a class="icon-btn" href={s.url} rel="me noopener" target="_blank" aria-label={s.name}>
+              <Icon name={s.icon} size={18} />
+            </a>
+          </li>
+        ))
+      }
+      <li>
+        <a class="icon-btn" href={url('/rss.xml')} aria-label="RSS feed">
+          <Icon name="rss" size={18} />
+        </a>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border-soft);
+    background: var(--bg-sidebar);
+  }
+
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-block: 22px;
+  }
+
+  .site-footer__copy {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .site-footer__prompt {
+    color: var(--accent);
+  }
+
+  .site-footer__copy a {
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 3px;
+  }
+
+  .site-footer__copy a:hover {
+    color: var(--accent);
+  }
+
+  .site-footer__links {
+    display: flex;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+</style>

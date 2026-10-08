@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getTags } from '../../lib/posts';
+import { url } from '../../lib/utils';
+
+const tags = await getTags();
+const max = Math.max(1, ...tags.map((t) => t.items.length));
+---
+
+<BaseLayout title="Tags" description="Duyệt bài viết theo tag.">
+  <div class="page container">
+    <header class="page-header">
+      <p class="eyebrow">ls ./tags</p>
+      <h1>Tags</h1>
+      <p>{tags.length} tag trên toàn bộ blog. Kích thước thể hiện số bài viết.</p>
+    </header>
+
+    {
+      tags.length === 0 ? (
+        <p class="empty-state">Chưa có tag nào.</p>
+      ) : (
+        <ul class="tag-cloud">
+          {tags.map((t) => (
+            <li>
+              <a
+                href={url(`/tags/${t.slug}/`)}
+                style={`--w:${0.85 + (t.items.length / max) * 0.9}`}
+              >
+                <span class="tag-cloud__hash">#</span>{t.tag}
+                <span class="tag-cloud__count">{t.items.length}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tag-cloud a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: calc(var(--w, 1) * 1rem);
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+  }
+
+  .tag-cloud a:hover {
+    color: var(--accent);
+    border-color: var(--accent-border);
+    background: var(--accent-softer);
+  }
+
+  .tag-cloud__hash {
+    color: var(--accent);
+  }
+
+  .tag-cloud__count {
+    font-size: 0.72em;
+    color: var(--text-faint);
+  }
+</style>

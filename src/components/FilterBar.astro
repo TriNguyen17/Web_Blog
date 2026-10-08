@@ -1,0 +1,33 @@
+---
+interface Option {
+  value: string;
+  label: string;
+  count?: number;
+}
+
+interface Props {
+  options: Option[];
+  allLabel?: string;
+  label: string;
+}
+
+const { options, allLabel = 'Tất cả', label } = Astro.props;
+---
+
+<div class="chips filter-bar" role="group" aria-label={label}>
+  <button class="chip" type="button" data-filter="all" aria-pressed="true">{allLabel}</button>
+  {
+    options.map((opt) => (
+      <button class="chip" type="button" data-filter={opt.value} aria-pressed="false">
+        {opt.label}
+        {opt.count !== undefined && <span class="chip__count">{opt.count}</span>}
+      </button>
+    ))
+  }
+</div>
+
+<style>
+  .filter-bar {
+    margin-bottom: 24px;
+  }
+</style>

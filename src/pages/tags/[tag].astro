@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getTags } from '../../lib/posts';
+import { url } from '../../lib/utils';
+import type { FeedItem } from '../../lib/posts';
+import Icon from '../../components/Icon.astro';
+
+export async function getStaticPaths() {
+  const tags = await getTags();
+  return tags.map((t) => ({ params: { tag: t.slug }, props: { tag: t.tag, items: t.items } }));
+}
+
+interface Props {
+  tag: string;
+  items: FeedItem[];
+}
+
+const { tag, items } = Astro.props;
+---
+
+<BaseLayout title={`#${tag}`} description={`Các bài viết được gắn tag #${tag}.`}>
+  <div class="page container">
+    <header class="page-header">
+      <a class="back-link" href={url('/tags/')}><Icon name="arrow-left" size={14} /> Tất cả tags</a>
+      <h1><span class="hash">#</span>{tag}</h1>
+      <p>{items.length} bài viết.</p>
+    </header>
+
+    <div class="card-grid">
+      {items.map((item, i) => <PostCard item={item} eager={i < 3} />)}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  .page-header h1 {
+    font-family: var(--font-mono);
+  }
+
+  .hash {
+    color: var(--accent);
+  }
+</style>

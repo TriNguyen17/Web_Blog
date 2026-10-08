@@ -1,0 +1,200 @@
+---
+import { url } from '../lib/utils';
+import Icon from './Icon.astro';
+---
+
+<dialog class="search-dialog" id="search-dialog" data-index={url('/search.json')} aria-label="Tìm kiếm">
+  <div class="search-box">
+    <div class="search-box__input">
+      <Icon name="search" size={18} />
+      <input
+        id="search-input"
+        type="search"
+        placeholder="Tìm write-up, challenge, ảnh… (gõ #tag để lọc)"
+        autocomplete="off"
+        spellcheck="false"
+        aria-controls="search-results"
+        aria-describedby="search-status"
+      />
+      <button class="icon-btn" type="button" data-search-close aria-label="Đóng tìm kiếm">
+        <Icon name="close" size={18} />
+      </button>
+    </div>
+    <p class="search-box__status" id="search-status" aria-live="polite"></p>
+    <ul class="search-results" id="search-results" role="listbox" aria-label="Kết quả"></ul>
+    <footer class="search-box__footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> di chuyển</span>
+      <span><kbd>Enter</kbd> mở</span>
+      <span><kbd>Esc</kbd> đóng</span>
+    </footer>
+  </div>
+</dialog>
+
+<style>
+  .search-dialog {
+    width: min(680px, calc(100% - 32px));
+    max-height: min(640px, calc(100dvh - 15vh));
+    margin: 10vh auto auto;
+    padding: 0;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .search-dialog[open] {
+    display: flex;
+    animation: pop 0.16s var(--ease);
+  }
+
+  .search-dialog::backdrop {
+    background: var(--overlay);
+    backdrop-filter: blur(3px);
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.99);
+    }
+  }
+
+  .search-box {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .search-box__input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 10px 10px 16px;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .search-box__input input {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    outline: none;
+  }
+
+  .search-box__input input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .search-box__status {
+    margin: 0;
+    padding: 10px 16px 4px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  .search-results {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 4px 8px 8px;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  .search-results :global(a) {
+    display: block;
+    padding: 10px 12px;
+    color: var(--text);
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+  }
+
+  .search-results :global([aria-selected='true'] a) {
+    background: var(--accent-softer);
+    border-color: var(--accent-border);
+  }
+
+  .search-results :global(.sr-head) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+
+  .search-results :global(.sr-type) {
+    flex: none;
+    padding: 1px 7px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+
+  .search-results :global(.sr-parent) {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .search-results :global(.sr-snippet) {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .search-results :global(mark) {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 3px;
+  }
+
+  .search-box__footer {
+    display: flex;
+    gap: 16px;
+    padding: 10px 16px;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    border-top: 1px solid var(--border-soft);
+    background: var(--bg-sidebar);
+  }
+
+  .search-box__footer kbd {
+    margin-right: 3px;
+  }
+
+  @media (max-width: 600px) {
+    .search-dialog {
+      margin-top: 12px;
+      max-height: calc(100dvh - 24px);
+    }
+
+    .search-box__footer {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { initSearch } from '../scripts/search';
+  initSearch();
+</script>

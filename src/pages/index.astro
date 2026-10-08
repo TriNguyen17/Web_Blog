@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import PostCard from '../components/PostCard.astro';
+import FilterBar from '../components/FilterBar.astro';
+import Icon from '../components/Icon.astro';
+import { getFeed, getWriteups, getPhotoPosts } from '../lib/posts';
+import { SITE } from '../config';
+import { url } from '../lib/utils';
+
+const [feed, writeups, photos] = await Promise.all([getFeed(), getWriteups(), getPhotoPosts()]);
+const latest = feed.slice(0, SITE.homePostsPerType * 2);
+
+const filterOptions = [
+  { value: 'writeup', label: 'CTF Write-ups', count: writeups.length },
+  { value: 'photo', label: 'Photos', count: photos.length },
+];
+---
+
+<BaseLayout>
+  <Hero />
+
+  <section class="page container">
+    <div class="section-title">
+      <h2 id="latest">Mới nhất</h2>
+      <a class="see-all" href={url('/writeups/')}>Tất cả write-ups <Icon name="arrow-right" size={14} /></a>
+    </div>
+
+    <div data-filter-root>
+      <FilterBar options={filterOptions} label="Lọc bài viết theo danh mục" />
+
+      <div class="card-grid" data-filter-items>
+        {latest.map((item, i) => <PostCard item={item} eager={i < 2} />)}
+      </div>
+
+      <p class="empty-state" data-filter-empty hidden>Không có bài viết nào trong danh mục này.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .see-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .see-all:hover {
+    color: var(--accent);
+  }
+</style>
+
+<script>
+  import { initFilters } from '../scripts/filter';
+  initFilters();
+</script>

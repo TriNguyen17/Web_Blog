@@ -1,0 +1,109 @@
+/* ==========================================================================
+   Code blocks — Shiki dual theme (github-dark / github-light)
+   astro.config.mjs uses `defaultColor: false`, so every token carries
+   --shiki-dark / --shiki-light variables and we pick one per theme.
+   ========================================================================== */
+.astro-code {
+  position: relative;
+  margin: 0 0 1.25em;
+  padding: 0 0 16px;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+.astro-code,
+.astro-code span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+:root[data-theme='light'] .astro-code,
+:root[data-theme='light'] .astro-code span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+/* Slightly darker than the page so blocks stand out */
+.astro-code {
+  background-color: var(--bg-sidebar);
+}
+
+.astro-code code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 18px;
+}
+
+/* Header bar with the language. Sticky-left so it stays put while the code
+   scrolls horizontally. The copy button is added by src/scripts/code-blocks.ts. */
+.astro-code::before {
+  content: attr(data-language);
+  position: sticky;
+  left: 0;
+  height: 32px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.astro-code[data-language='plaintext']::before,
+.astro-code[data-language='text']::before,
+.astro-code[data-language='txt']::before {
+  content: 'output';
+}
+
+.code-wrapper {
+  position: relative;
+}
+
+.code-copy {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.code-copy:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.code-copy[data-copied='true'] {
+  color: var(--accent);
+}
+
+.code-copy svg {
+  width: 14px;
+  height: 14px;
+}

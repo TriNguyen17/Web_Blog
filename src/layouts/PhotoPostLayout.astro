@@ -1,0 +1,204 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import PhotoGallery from '../components/photo/PhotoGallery.astro';
+import Lightbox from '../components/photo/Lightbox.astro';
+import TagList from '../components/TagList.astro';
+import Icon from '../components/Icon.astro';
+import { allPhotoPostTags, galleryItems, photoPostUrl, type PhotoPost } from '../lib/posts';
+import { formatDate, isoDate, url } from '../lib/utils';
+
+interface Props {
+  entry: PhotoPost;
+  prev?: PhotoPost;
+  next?: PhotoPost;
+  hasBody: boolean;
+}
+
+const { entry, prev, next, hasBody } = Astro.props;
+const { data } = entry;
+const tags = allPhotoPostTags(entry);
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.cover ?? data.photos[0].src}
+  type="article"
+  publishedTime={data.pubDate}
+  tags={tags}
+>
+  <article class="photo-post page">
+    <div class="container photo-post__inner">
+      <header class="photo-post__hero">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href={url('/photos/')}>photos</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{entry.id}</span>
+        </nav>
+        <h1>{data.title}</h1>
+        <p class="photo-post__desc">{data.description}</p>
+        <ul class="photo-post__meta">
+          <li>
+            <Icon name="calendar" size={15} />
+            <time datetime={isoDate(data.pubDate)}>{formatDate(data.pubDate)}</time>
+          </li>
+          <li><Icon name="image" size={15} /> {data.photos.length} ảnh</li>
+          {data.location && <li><Icon name="map-pin" size={15} /> {data.location}</li>}
+        </ul>
+        <TagList tags={tags} />
+      </header>
+
+      {
+        hasBody && (
+          <div class="prose photo-post__body">
+            <slot />
+          </div>
+        )
+      }
+
+      <PhotoGallery items={galleryItems(entry)} />
+
+      <nav class="post-nav" aria-label="Album khác">
+        {
+          prev ? (
+            <a class="post-nav__link" href={photoPostUrl(prev)} rel="prev">
+              <span class="post-nav__label"><Icon name="arrow-left" size={14} /> Cũ hơn</span>
+              <span class="post-nav__title">{prev.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          next && (
+            <a class="post-nav__link post-nav__link--next" href={photoPostUrl(next)} rel="next">
+              <span class="post-nav__label">Mới hơn <Icon name="arrow-right" size={14} /></span>
+              <span class="post-nav__title">{next.data.title}</span>
+            </a>
+          )
+        }
+      </nav>
+    </div>
+  </article>
+
+  <Lightbox />
+</BaseLayout>
+
+<style>
+  .photo-post__inner {
+    max-width: 1140px;
+  }
+
+  .photo-post__hero {
+    max-width: 720px;
+    margin-bottom: 32px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .breadcrumb a {
+    color: var(--text-muted);
+  }
+
+  .breadcrumb a:hover {
+    color: var(--accent);
+  }
+
+  .photo-post__hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+  }
+
+  .photo-post__desc {
+    margin: 0 0 16px;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+  }
+
+  .photo-post__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .photo-post__meta li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .photo-post__meta :global(svg) {
+    color: var(--accent);
+  }
+
+  .photo-post__body {
+    max-width: 680px;
+    margin-bottom: 36px;
+  }
+
+  .post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .post-nav__link {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s;
+  }
+
+  .post-nav__link:hover {
+    border-color: var(--accent-border);
+  }
+
+  .post-nav__link--next {
+    grid-column: 2;
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  .post-nav__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  .post-nav__title {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  @media (max-width: 600px) {
+    .post-nav {
+      grid-template-columns: 1fr;
+    }
+
+    .post-nav__link--next {
+      grid-column: 1;
+    }
+  }
+</style>

@@ -1,0 +1,389 @@
+---
+import type { MarkdownHeading } from 'astro';
+import BaseLayout from './BaseLayout.astro';
+import ChallengeBoard from '../components/writeup/ChallengeBoard.astro';
+import TableOfContents from '../components/writeup/TableOfContents.astro';
+import TagList from '../components/TagList.astro';
+import Icon from '../components/Icon.astro';
+import { buildBoard, buildToc } from '../lib/ctf';
+import { writeupUrl, type Writeup } from '../lib/posts';
+import { formatDate, isoDate, readingTime, url } from '../lib/utils';
+
+interface Props {
+  entry: Writeup;
+  headings: MarkdownHeading[];
+  prev?: Writeup;
+  next?: Writeup;
+}
+
+const { entry, headings, prev, next } = Astro.props;
+const { data } = entry;
+
+const { toc, entries, missing } = buildToc(headings, data.challenges);
+const board = buildBoard(data.challenges, entries);
+if (missing.length) {
+  console.warn(
+    `[writeups/${entry.id}] No "## heading" found for: ${missing.map((c) => c.name).join(', ')}. ` +
+      'The heading text must equal the challenge name (or set `id`).',
+  );
+}
+
+const minutes = readingTime(entry.body);
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.cover}
+  type="article"
+  publishedTime={data.pubDate}
+  modifiedTime={data.updatedDate}
+  tags={data.tags}
+>
+  <div class="read-progress" aria-hidden="true"><span data-read-progress></span></div>
+
+  <div class="writeup">
+    <TableOfContents toc={toc} ctfName={data.ctf.name} />
+
+    <article class="writeup__main">
+      <header class="writeup__hero">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href={url('/writeups/')}>writeups</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{entry.id}</span>
+        </nav>
+
+        <h1 class="writeup__title">{data.title}</h1>
+        <p class="writeup__desc">{data.description}</p>
+
+        <ul class="writeup__meta">
+          <li>
+            <Icon name="calendar" size={15} />
+            <time datetime={isoDate(data.pubDate)}>{formatDate(data.pubDate)}</time>
+          </li>
+          <li><Icon name="clock" size={15} /> {minutes} phút đọc</li>
+          {data.ctf.date && <li><Icon name="flag" size={15} /> {data.ctf.date}</li>}
+          {data.ctf.team && <li><Icon name="users" size={15} /> {data.ctf.team}</li>}
+          {data.ctf.rank && <li><Icon name="trophy" size={15} /> Hạng {data.ctf.rank}</li>}
+          {
+            data.ctf.url && (
+              <li>
+                <a href={data.ctf.url} target="_blank" rel="noopener">
+                  <Icon name="external" size={15} /> {data.ctf.name}
+                </a>
+              </li>
+            )
+          }
+        </ul>
+        <TagList tags={data.tags} />
+      </header>
+
+      <ChallengeBoard groups={board} />
+
+      <div class="prose writeup-content">
+        <slot />
+      </div>
+
+      {
+        data.updatedDate && (
+          <p class="writeup__updated">Cập nhật lần cuối: {formatDate(data.updatedDate)}</p>
+        )
+      }
+
+      <nav class="post-nav" aria-label="Write-up khác">
+        {
+          prev ? (
+            <a class="post-nav__link" href={writeupUrl(prev)} rel="prev">
+              <span class="post-nav__label">
+                <Icon name="arrow-left" size={14} /> Cũ hơn
+              </span>
+              <span class="post-nav__title">{prev.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          next && (
+            <a class="post-nav__link post-nav__link--next" href={writeupUrl(next)} rel="next">
+              <span class="post-nav__label">
+                Mới hơn <Icon name="arrow-right" size={14} />
+              </span>
+              <span class="post-nav__title">{next.data.title}</span>
+            </a>
+          )
+        }
+      </nav>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  .read-progress {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    z-index: 45;
+    height: 2px;
+    pointer-events: none;
+  }
+
+  .read-progress span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .writeup {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .writeup__main {
+    width: 100%;
+    max-width: 920px;
+    margin-inline: auto;
+    padding: 40px clamp(20px, 4vw, 56px) 80px;
+  }
+
+  @media (max-width: 1023px) {
+    .writeup {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .writeup__main {
+      padding: 28px var(--gutter) 96px;
+    }
+  }
+
+  .breadcrumb {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .breadcrumb a {
+    color: var(--text-muted);
+  }
+
+  .breadcrumb a:hover {
+    color: var(--accent);
+  }
+
+  .writeup__title {
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    letter-spacing: -0.01em;
+  }
+
+  .writeup__desc {
+    margin: 0 0 18px;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+  }
+
+  .writeup__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .writeup__meta li,
+  .writeup__meta a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .writeup__meta :global(svg) {
+    color: var(--accent);
+  }
+
+  .writeup__updated {
+    margin-top: 40px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .post-nav__link {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s;
+  }
+
+  .post-nav__link:hover {
+    border-color: var(--accent-border);
+  }
+
+  .post-nav__link--next {
+    grid-column: 2;
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  .post-nav__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  .post-nav__title {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------------
+     Write-up content: markup produced by src/plugins/rehype-ctf-sections.mjs
+     ------------------------------------------------------------------ */
+  .writeup-content :global(.ctf-challenge) {
+    margin-top: 72px;
+  }
+
+  .writeup-content :global(.ctf-challenge__header) {
+    margin-bottom: 28px;
+    padding: 18px 20px 16px;
+    background:
+      linear-gradient(90deg, var(--accent-soft), transparent 70%),
+      var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+  }
+
+  .writeup-content :global(.ctf-challenge__title) {
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-size: clamp(1.35rem, 3vw, 1.65rem);
+    letter-spacing: -0.01em;
+  }
+
+  .writeup-content :global(.ctf-challenge__title::before) {
+    content: '>';
+    margin-right: 0.6ch;
+    color: var(--accent);
+  }
+
+  .writeup-content :global(.ctf-meta) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+  }
+
+  .writeup-content :global(.ctf-meta__item) {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .writeup-content :global(.ctf-meta__points) {
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* Steps form a small timeline */
+  .writeup-content :global(.ctf-step) {
+    position: relative;
+    margin-left: 6px;
+    padding: 0 0 8px 26px;
+    border-left: 1px solid var(--border);
+  }
+
+  .writeup-content :global(.ctf-step > h3) {
+    position: relative;
+    margin-top: 0;
+    padding-top: 22px;
+    font-family: var(--font-mono);
+    font-size: 1.08rem;
+  }
+
+  .writeup-content :global(.ctf-step > h3::before) {
+    content: '';
+    position: absolute;
+    left: -32px;
+    top: 27px;
+    width: 11px;
+    height: 11px;
+    background: var(--bg);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+  }
+
+  .writeup-content :global(.ctf-step--flag) {
+    border-left-color: transparent;
+  }
+
+  .writeup-content :global(.ctf-step--flag > h3::before) {
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  .writeup-content :global(.ctf-step--flag > :not(h3)) {
+    border-color: var(--accent-border);
+  }
+
+  .writeup-content :global(.ctf-step--flag p code) {
+    display: inline-block;
+    padding: 8px 14px;
+    font-size: 0.95rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px dashed var(--accent-border);
+    border-radius: var(--radius);
+    word-break: break-all;
+  }
+
+  .writeup-content :global(.ctf-section) {
+    margin-top: 64px;
+  }
+
+  @media (max-width: 600px) {
+    .writeup-content :global(.ctf-step) {
+      padding-left: 18px;
+    }
+
+    .writeup-content :global(.ctf-step > h3::before) {
+      left: -24px;
+    }
+
+    .post-nav {
+      grid-template-columns: 1fr;
+    }
+
+    .post-nav__link--next {
+      grid-column: 1;
+    }
+  }
+</style>

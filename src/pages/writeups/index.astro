@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import { getWriteups, writeupToFeed } from '../../lib/posts';
+import { CATEGORIES, type CategoryKey } from '../../lib/ctf';
+
+const writeups = await getWriteups();
+const items = writeups.map(writeupToFeed);
+
+// Category chips: only categories that actually appear, with counts.
+const counts = new Map<CategoryKey, number>();
+for (const entry of writeups) {
+  for (const cat of new Set(entry.data.challenges.map((c) => c.category))) {
+    counts.set(cat, (counts.get(cat) ?? 0) + 1);
+  }
+}
+const filterOptions = (Object.keys(CATEGORIES) as CategoryKey[])
+  .filter((cat) => counts.has(cat))
+  .map((cat) => ({ value: cat.toLowerCase(), label: CATEGORIES[cat].name, count: counts.get(cat) }));
+
+const totalChallenges = writeups.reduce((sum, e) => sum + e.data.challenges.length, 0);
+---
+
+<BaseLayout
+  title="CTF Write-ups"
+  description="Tổng hợp lời giải các challenge CTF: Reverse Engineering, Digital Forensics, Web, Crypto, Pwn và Misc."
+>
+  <div class="page container">
+    <header class="page-header">
+      <p class="eyebrow">cat ./writeups</p>
+      <h1>CTF Write-ups</h1>
+      <p>
+        {writeups.length} bài viết · {totalChallenges} challenge đã giải. Lời giải chi tiết theo từng cuộc thi, nhóm
+        theo category.
+      </p>
+    </header>
+
+    {
+      items.length === 0 ? (
+        <p class="empty-state">Chưa có write-up nào. Thêm file vào <code>src/content/writeups/</code>.</p>
+      ) : (
+        <div data-filter-root>
+          <FilterBar options={filterOptions} label="Lọc write-up theo category" />
+          <div class="card-grid" data-filter-items>
+            {items.map((item, i) => (
+              <PostCard item={item} eager={i < 3} />
+            ))}
+          </div>
+          <p class="empty-state" data-filter-empty hidden>
+            Không có write-up nào chứa category này.
+          </p>
+        </div>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<script>
+  import { initFilters } from '../../scripts/filter';
+  initFilters();
+</script>

@@ -1,0 +1,52 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import '../styles/prose.css';
+import '../styles/code.css';
+
+import BaseHead, { type SeoProps } from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SearchModal from '../components/SearchModal.astro';
+import { SITE } from '../config';
+
+type Props = SeoProps;
+---
+
+<!doctype html>
+<html lang={SITE.lang} data-theme="dark">
+  <head>
+    <BaseHead {...Astro.props} />
+    <script is:inline>
+      // Runs before paint: apply the saved theme (dark by default) and
+      // flag that JS is available (enables the reveal animations).
+      (function () {
+        var root = document.documentElement;
+        root.classList.add('js');
+        var theme = 'dark';
+        try {
+          theme = localStorage.getItem('theme') || 'dark';
+        } catch (e) {}
+        root.dataset.theme = theme === 'light' ? 'light' : 'dark';
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Bỏ qua tới nội dung</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <SearchModal />
+
+    <script>
+      import { initCodeBlocks } from '../scripts/code-blocks';
+      import { initReveal } from '../scripts/reveal';
+      initCodeBlocks();
+      initReveal();
+    </script>
+  </body>
+</html>

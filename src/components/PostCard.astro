@@ -1,0 +1,233 @@
+---
+import { Image } from 'astro:assets';
+import type { FeedItem } from '../lib/posts';
+import { categorySlug } from '../lib/ctf';
+import { formatDate, isoDate } from '../lib/utils';
+import Icon from './Icon.astro';
+import TagList from './TagList.astro';
+
+interface Props {
+  item: FeedItem;
+  /** Load the cover eagerly (first cards above the fold). */
+  eager?: boolean;
+}
+
+const { item, eager = false } = Astro.props;
+const categories = [...new Set(item.categories)];
+---
+
+{
+  item.type === 'writeup' ? (
+    <article class="post-card post-card--writeup" data-type="writeup" data-tags={item.tags.join(',')} data-reveal>
+      <div class="post-card__top">
+        <span class="post-card__kind">
+          <Icon name="flag" size={14} /> CTF write-up
+        </span>
+        <time datetime={isoDate(item.date)}>{formatDate(item.date)}</time>
+      </div>
+      <h3 class="post-card__title">
+        <a href={item.href}>{item.title}</a>
+      </h3>
+      <p class="post-card__desc">{item.description}</p>
+      {categories.length > 0 && (
+        <div class="post-card__cats">
+          {categories.map((cat) => (
+            <span class="cat-badge" data-cat={categorySlug(cat)}>
+              {cat}
+            </span>
+          ))}
+        </div>
+      )}
+      <TagList tags={item.tags} class="post-card__tags" />
+    </article>
+  ) : (
+    <article class="post-card post-card--photo" data-type="photo" data-tags={item.tags.join(',')} data-reveal>
+      {item.cover && (
+        <div class="post-card__media">
+          <Image
+            src={item.cover}
+            alt=""
+            widths={[400, 640, 900]}
+            sizes="(min-width: 1200px) 380px, (min-width: 700px) 45vw, 100vw"
+            loading={eager ? 'eager' : 'lazy'}
+          />
+          <span class="post-card__count">
+            <Icon name="image" size={14} /> {item.photoCount} ảnh
+          </span>
+        </div>
+      )}
+      <div class="post-card__body">
+        <div class="post-card__top">
+          <span class="post-card__kind post-card__kind--photo">Photo</span>
+          <time datetime={isoDate(item.date)}>{formatDate(item.date)}</time>
+        </div>
+        <h3 class="post-card__title">
+          <a href={item.href}>{item.title}</a>
+        </h3>
+        <p class="post-card__desc">{item.description}</p>
+        <TagList tags={item.tags} class="post-card__tags" />
+      </div>
+    </article>
+  )
+}
+
+<style>
+  .post-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition:
+      border-color 0.2s var(--ease),
+      box-shadow 0.2s var(--ease),
+      transform 0.2s var(--ease);
+  }
+
+  .post-card:hover {
+    transform: translateY(-3px);
+  }
+
+  /* --- write-up: terminal-like card --- */
+  .post-card--writeup {
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    background:
+      linear-gradient(180deg, var(--accent-softer), transparent 40%),
+      var(--surface);
+  }
+
+  .post-card--writeup:hover {
+    border-color: var(--accent-border);
+    box-shadow: var(--accent-glow);
+  }
+
+  .post-card--writeup .post-card__title {
+    font-family: var(--font-mono);
+    font-size: 1.08rem;
+  }
+
+  /* --- photo: softer card --- */
+  .post-card--photo {
+    overflow: hidden;
+    border-radius: var(--radius-soft);
+    border-color: var(--border-soft);
+  }
+
+  .post-card--photo:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--border);
+  }
+
+  .post-card__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .post-card__media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease);
+  }
+
+  .post-card--photo:hover .post-card__media :global(img) {
+    transform: scale(1.04);
+  }
+
+  .post-card__count {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgb(0 0 0 / 0.55);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+  }
+
+  .post-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 20px 20px;
+  }
+
+  .post-card--photo .post-card__title {
+    font-size: 1.12rem;
+    font-weight: 650;
+  }
+
+  /* --- shared --- */
+  .post-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  .post-card__kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+  }
+
+  .post-card__kind--photo {
+    color: var(--cat-osint);
+  }
+
+  .post-card__title {
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .post-card__title a {
+    color: var(--text);
+  }
+
+  /* Whole card clickable; tags stay clickable above the overlay. */
+  .post-card__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .post-card:hover .post-card__title a {
+    color: var(--accent);
+  }
+
+  .post-card__desc {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-card__cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .post-card :global(.post-card__tags) {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+  }
+</style>
