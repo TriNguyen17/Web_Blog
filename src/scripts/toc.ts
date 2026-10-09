@@ -74,6 +74,7 @@ export function initToc() {
     .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
 
   let activeId: string | null = null;
+  let activeChangedAt = 0;
   let lockUntil = 0;
   // Last heading the reader jumped to (link click or URL hash). Near the
   // bottom of the page a jump may not bring it up to the activation line, so
@@ -93,9 +94,33 @@ export function initToc() {
     }
   }
 
+  // A step of a challenge the reader collapsed is hidden: its challenge's
+  // own link stands in for it.
+  function shownLink(link: HTMLElement) {
+    const item = link.closest<HTMLElement>('[data-toc-item]');
+    if (item && item.dataset.expanded !== 'true' && link.closest('.toc__sub')) {
+      return item.querySelector<HTMLElement>('.toc__link') ?? link;
+    }
+    return link;
+  }
+
+  // Re-run once the sidebar's geometry has settled (footer shrink, a
+  // challenge's sub-list opening), which can push the active link out of
+  // view; unless the reader has scrolled the list by hand since then.
+  let listInputAt = 0;
+  for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const) {
+    scroller.addEventListener(type, () => (listInputAt = performance.now()), { passive: true });
+  }
+  function revealActive() {
+    if (listInputAt > activeChangedAt) return;
+    const link = links.find((l) => l.dataset.tocLink === activeId);
+    if (link) revealInSidebar(shownLink(link));
+  }
+
   function setActive(id: string | null) {
     if (id === activeId) return;
     activeId = id;
+    activeChangedAt = performance.now();
 
     for (const link of links) {
       if (link.dataset.tocLink === id) link.setAttribute('aria-current', 'location');
@@ -117,7 +142,11 @@ export function initToc() {
       autoItem = item;
     }
 
-    if (link) requestAnimationFrame(() => revealInSidebar(link));
+    if (link)
+      requestAnimationFrame(() => {
+        fitToFooter();
+        revealInSidebar(shownLink(link));
+      });
   }
 
   // Activation line: a heading counts as "current" once its top passes this
@@ -191,11 +220,13 @@ export function initToc() {
     });
   }
 
-  // When a TOC / board link is clicked, highlight the target right away and
-  // ignore intermediate headings during the smooth scroll.
+  // When a link to a heading of this page is clicked (TOC, board, a search
+  // result), highlight the target right away and ignore intermediate headings
+  // during the smooth scroll.
   document.addEventListener('click', (e) => {
-    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
-    const id = a ? decodeURIComponent(a.hash.slice(1)) : '';
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; // new tab / window
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href*="#"]');
+    const id = a && a.pathname === location.pathname ? decodeURIComponent(a.hash.slice(1)) : '';
     if (!id || !targets.some((t) => t.id === id)) return;
     clickedId = id;
     setActive(id);
@@ -224,9 +255,33 @@ export function initToc() {
   window.addEventListener('keydown', (e) => {
     if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) releaseClick();
   });
-  window.addEventListener('scrollend', () => {
+  const onScrollEnd = () => {
     lockUntil = 0;
+    fitToFooter();
     onScroll();
+    if (performance.now() - activeChangedAt < 2000) revealActive();
+  };
+  const hasScrollEnd = 'onscrollend' in window;
+  if (hasScrollEnd) {
+    window.addEventListener('scrollend', onScrollEnd);
+  } else {
+    // Safari has no scrollend yet: wait for scroll events to stop.
+    let timer = 0;
+    window.addEventListener(
+      'scroll',
+      () => {
+        clearTimeout(timer);
+        timer = window.setTimeout(onScrollEnd, 150);
+      },
+      { passive: true },
+    );
+  }
+  // Once the current challenge's sub-list has finished opening.
+  toc.addEventListener('transitionend', (e) => {
+    const el = e.target as HTMLElement;
+    if (e.propertyName !== 'grid-template-rows' || !el.classList.contains('toc__sub')) return;
+    if (el.closest<HTMLElement>('[data-toc-item]')?.dataset.expanded !== 'true') return;
+    if (activeId && el.querySelector(`[data-toc-link="${CSS.escape(activeId)}"]`)) revealActive();
   });
 
   window.addEventListener('scroll', onScroll, { passive: true });
@@ -242,6 +297,8 @@ export function initToc() {
   onScroll();
 
   /* ---------------- mobile drawer ---------------- */
+  // While a dialog is open on top (search), Tab / Esc / clicks belong to it.
+  const dialogOnTop = () => document.querySelector('dialog[open]') !== null;
   const isFocusable = (el: HTMLElement) =>
     el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
   const focusables = () =>
@@ -255,10 +312,20 @@ export function initToc() {
     if (open) {
       toc!.setAttribute('role', 'dialog');
       toc!.setAttribute('aria-modal', 'true');
-      // The drawer becomes focusable once it is visible: try for a few frames.
+      // Start on the section being read. The drawer becomes focusable once it
+      // is visible: try for a few frames.
       let tries = 0;
       const focusIn = () => {
-        const active = toc!.querySelector<HTMLElement>('[aria-current="location"]');
+        let active = toc!.querySelector<HTMLElement>('[aria-current="location"]');
+        // A step of a collapsed challenge: the challenge's own link stands in.
+        const parent = active?.closest<HTMLElement>('[data-toc-item]');
+        if (active && parent && parent.dataset.expanded !== 'true' && active.classList.contains('toc__sublink')) {
+          active = parent.querySelector<HTMLElement>('.toc__link');
+        }
+        if (active && !isFocusable(active) && tries++ < 10) {
+          requestAnimationFrame(focusIn);
+          return;
+        }
         const target = active && isFocusable(active) ? active : focusables()[0];
         if (target) {
           target.focus({ preventScroll: true });
@@ -274,38 +341,62 @@ export function initToc() {
     }
   }
 
-  // Keep Tab / Shift+Tab inside the open drawer.
-  toc.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || toc.dataset.open !== 'true' || !mobile.matches) return;
+  // Where the last press landed: after a click on plain text in the drawer
+  // focus is on <body>, and Tab should go on from that spot.
+  let pressed: Node | null = null;
+  document.addEventListener('pointerdown', (e) => (pressed = e.target as Node), true);
+  document.addEventListener('focusin', () => (pressed = null));
+
+  // Keep Tab / Shift+Tab inside the open drawer, also when focus has fallen
+  // out of it (e.g. to <body>).
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || toc.dataset.open !== 'true' || !mobile.matches || dialogOnTop()) return;
     const list = focusables();
     if (!list.length) return;
     const first = list[0];
     const last = list[list.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
+    const active = document.activeElement;
+    if (!toc.contains(active)) {
+      e.preventDefault();
+      const from = pressed && toc.contains(pressed) ? pressed : null;
+      const next =
+        from &&
+        (e.shiftKey
+          ? list.filter((el) => from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING).pop()
+          : list.find((el) => from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING));
+      (next ?? (e.shiftKey ? last : first)).focus();
+    } else if (e.shiftKey && active === first) {
       e.preventDefault();
       last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
+    } else if (!e.shiftKey && active === last) {
       e.preventDefault();
       first.focus();
     }
   });
 
   fab?.addEventListener('click', () => setOpen(true));
-  document.querySelectorAll('[data-toc-close]').forEach((el) =>
-    el.addEventListener('click', () => {
-      setOpen(false);
-      fab?.focus({ preventScroll: true });
-    }),
-  );
+  const closeDrawer = () => {
+    setOpen(false);
+    fab?.focus({ preventScroll: true });
+  };
+  document.querySelectorAll('[data-toc-close]').forEach((el) => el.addEventListener('click', closeDrawer));
+  // The scrollbar gutter is painted like the backdrop while the drawer is
+  // open (global.css), so a click there closes it too.
+  document.addEventListener('click', (e) => {
+    if (toc.dataset.open === 'true' && e.target === document.documentElement && !dialogOnTop()) closeDrawer();
+  });
   toc.addEventListener('click', (e) => {
     if (mobile.matches && (e.target as HTMLElement).closest('a')) setOpen(false);
   });
   document.addEventListener('keydown', (e) => {
-    // defaultPrevented: Esc already closed a dialog on top (search).
-    if (e.key === 'Escape' && !e.defaultPrevented && toc.dataset.open === 'true') {
-      setOpen(false);
-      fab?.focus({ preventScroll: true });
-    }
+    if (e.key !== 'Escape' || toc.dataset.open !== 'true') return;
+    // Esc already handled by a dialog on top (search).
+    if (e.defaultPrevented || dialogOnTop()) return;
+    closeDrawer();
+  });
+  // A search result on this page was followed: get out of its way.
+  document.addEventListener('search:follow', () => {
+    if (toc.dataset.open === 'true') setOpen(false);
   });
   mobile.addEventListener('change', () => {
     if (!mobile.matches) setOpen(false);

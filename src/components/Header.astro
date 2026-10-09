@@ -277,12 +277,14 @@ const isActive = (href: string) => {
       if ((e.target as HTMLElement).closest('a')) setOpen(false);
     });
     document.addEventListener('keydown', (e) => {
-      // defaultPrevented: Esc already closed a dialog on top (search).
-      if (e.key === 'Escape' && !e.defaultPrevented && nav.dataset.open === 'true') {
-        setOpen(false);
-        toggle.focus({ preventScroll: true });
-      }
+      if (e.key !== 'Escape' || nav.dataset.open !== 'true') return;
+      // Esc already handled by a dialog on top (search).
+      if (e.defaultPrevented || document.querySelector('dialog[open]')) return;
+      setOpen(false);
+      toggle.focus({ preventScroll: true });
     });
+    // A search result on this page was followed: get out of its way.
+    document.addEventListener('search:follow', () => setOpen(false));
     document.addEventListener('click', (e) => {
       const target = e.target as Element;
       if (target.closest?.('dialog')) return; // clicks inside the search dialog
@@ -305,6 +307,9 @@ const isActive = (href: string) => {
     const el = e.target;
     if (!header || !(el instanceof HTMLElement) || !el.closest('main') || el.closest('#toc, dialog')) return;
     if (!el.matches(':focus-visible')) return;
+    // Focus handed back by a closing dialog (lightbox, search): the page must
+    // stay where it is.
+    if (e.relatedTarget instanceof Element && e.relatedTarget.closest('dialog')) return;
     requestAnimationFrame(() => {
       const headerBottom = header.getBoundingClientRect().bottom;
       const top = el.getBoundingClientRect().top;
