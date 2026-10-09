@@ -43,6 +43,7 @@ export function initLightbox() {
   const prevBtn = dialog.querySelector<HTMLButtonElement>('[data-lb-prev]')!;
   const nextBtn = dialog.querySelector<HTMLButtonElement>('[data-lb-next]')!;
   const statusEl = dialog.querySelector<HTMLElement>('[data-lb-status]');
+  const stage = dialog.querySelector<HTMLElement>('.lightbox__stage')!;
 
   let slides: Slide[] = [];
   let pos = 0;
@@ -104,10 +105,26 @@ export function initLightbox() {
     if (statusEl) statusEl.textContent = announce ? `${pos + 1} / ${slides.length}: ${slide.alt}` : '';
   }
 
+  // The loading spinner sits over the photo being replaced (in the
+  // side-by-side landscape layout the stage centre is on the caption), or at
+  // the stage centre when there is none yet.
+  function placeSpinner() {
+    const r = img!.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      stage.style.setProperty('--spin-x', `${r.left - s.left + r.width / 2}px`);
+      stage.style.setProperty('--spin-y', `${r.top - s.top + r.height / 2}px`);
+    } else {
+      stage.style.removeProperty('--spin-x');
+      stage.style.removeProperty('--spin-y');
+    }
+  }
+
   function show(i: number, announce = true) {
     pos = (i + slides.length) % slides.length;
     const slide = slides[pos];
     const token = ++seq;
+    placeSpinner();
 
     // Load and decode the full-size file first, then swap photo and text
     // together: the caption never sits over the previous photo, or over an

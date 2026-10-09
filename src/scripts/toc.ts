@@ -94,12 +94,27 @@ export function initToc() {
     }
   }
 
+  // A step of a challenge the reader collapsed is hidden: its challenge's
+  // own link stands in for it.
+  function shownLink(link: HTMLElement) {
+    const item = link.closest<HTMLElement>('[data-toc-item]');
+    if (item && item.dataset.expanded !== 'true' && link.closest('.toc__sub')) {
+      return item.querySelector<HTMLElement>('.toc__link') ?? link;
+    }
+    return link;
+  }
+
   // Re-run once the sidebar's geometry has settled (footer shrink, a
-  // challenge's sub-list opening), which can push the active link out of view.
+  // challenge's sub-list opening), which can push the active link out of
+  // view; unless the reader has scrolled the list by hand since then.
+  let listInputAt = 0;
+  for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const) {
+    scroller.addEventListener(type, () => (listInputAt = performance.now()), { passive: true });
+  }
   function revealActive() {
+    if (listInputAt > activeChangedAt) return;
     const link = links.find((l) => l.dataset.tocLink === activeId);
-    if (!link || link.closest('[data-toc-item]:not([data-expanded="true"]) .toc__sub')) return;
-    revealInSidebar(link);
+    if (link) revealInSidebar(shownLink(link));
   }
 
   function setActive(id: string | null) {
@@ -130,7 +145,7 @@ export function initToc() {
     if (link)
       requestAnimationFrame(() => {
         fitToFooter();
-        revealInSidebar(link);
+        revealInSidebar(shownLink(link));
       });
   }
 
@@ -205,11 +220,13 @@ export function initToc() {
     });
   }
 
-  // When a TOC / board link is clicked, highlight the target right away and
-  // ignore intermediate headings during the smooth scroll.
+  // When a link to a heading of this page is clicked (TOC, board, a search
+  // result), highlight the target right away and ignore intermediate headings
+  // during the smooth scroll.
   document.addEventListener('click', (e) => {
-    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
-    const id = a ? decodeURIComponent(a.hash.slice(1)) : '';
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; // new tab / window
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href*="#"]');
+    const id = a && a.pathname === location.pathname ? decodeURIComponent(a.hash.slice(1)) : '';
     if (!id || !targets.some((t) => t.id === id)) return;
     clickedId = id;
     setActive(id);
@@ -324,6 +341,12 @@ export function initToc() {
     }
   }
 
+  // Where the last press landed: after a click on plain text in the drawer
+  // focus is on <body>, and Tab should go on from that spot.
+  let pressed: Node | null = null;
+  document.addEventListener('pointerdown', (e) => (pressed = e.target as Node), true);
+  document.addEventListener('focusin', () => (pressed = null));
+
   // Keep Tab / Shift+Tab inside the open drawer, also when focus has fallen
   // out of it (e.g. to <body>).
   document.addEventListener('keydown', (e) => {
@@ -332,11 +355,20 @@ export function initToc() {
     if (!list.length) return;
     const first = list[0];
     const last = list[list.length - 1];
-    const inside = toc.contains(document.activeElement);
-    if (e.shiftKey && (!inside || document.activeElement === first)) {
+    const active = document.activeElement;
+    if (!toc.contains(active)) {
+      e.preventDefault();
+      const from = pressed && toc.contains(pressed) ? pressed : null;
+      const next =
+        from &&
+        (e.shiftKey
+          ? list.filter((el) => from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING).pop()
+          : list.find((el) => from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING));
+      (next ?? (e.shiftKey ? last : first)).focus();
+    } else if (e.shiftKey && active === first) {
       e.preventDefault();
       last.focus();
-    } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+    } else if (!e.shiftKey && active === last) {
       e.preventDefault();
       first.focus();
     }
