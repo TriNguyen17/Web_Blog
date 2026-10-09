@@ -53,7 +53,7 @@ export interface TocGroup {
  * matter, and neither do the typographic quotes, dashes and ellipses that
  * SmartyPants puts in headings (`Baby's` is rendered `Baby’s`).
  */
-const normalize = (s: string) =>
+export const normalizeName = (s: string) =>
   s
     .normalize('NFC')
     .replace(/[‘’'“”"]/g, '')
@@ -73,7 +73,7 @@ export function matchChallenge(
 ): ChallengeMeta | undefined {
   return (
     challenges.find((c) => c.id && c.id === heading.slug) ??
-    challenges.find((c) => normalize(c.name) === normalize(heading.text))
+    challenges.find((c) => normalizeName(c.name) === normalizeName(heading.text))
   );
 }
 

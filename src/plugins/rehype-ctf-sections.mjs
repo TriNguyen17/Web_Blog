@@ -19,7 +19,7 @@
  * Needs `rehypeHeadingIds` to run before it (see astro.config.mjs).
  */
 
-/** Same rules as normalize() in src/lib/ctf.ts. */
+/** Same rules as normalizeName() in src/lib/ctf.ts. */
 const normalize = (s) =>
   s
     .normalize('NFC')

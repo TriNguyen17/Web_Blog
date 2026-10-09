@@ -39,7 +39,8 @@ challenges:
 
 ### Lỗ hổng / Phân tích
 
-<!-- Chèn ảnh: đặt file vào images/ rồi bỏ dấu comment ở dòng dưới (ảnh phải có thật, nếu không build sẽ lỗi).
+<!-- Có ảnh thật trong images/ thì sửa tên file ở dòng ảnh, rồi xoá 2 dòng mở/đóng comment bao quanh nó. -->
+<!--
 ![Mô tả ảnh](./images/ten-anh.png)
 -->
 

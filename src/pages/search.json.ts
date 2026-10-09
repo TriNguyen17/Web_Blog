@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { render } from 'astro:content';
 import { getPhotoPosts, getWriteups, writeupUrl, photoPostUrl, allPhotoPostTags } from '../lib/posts';
-import { matchChallenge } from '../lib/ctf';
+import { matchChallenge, normalizeName } from '../lib/ctf';
 import { splitH2Sections, stripMarkdown } from '../lib/utils';
 import type { SearchDoc } from '../scripts/search';
 
@@ -33,8 +33,10 @@ export const GET: APIRoute = async () => {
     const sections = splitH2Sections(entry.body);
     for (const c of entry.data.challenges) {
       const heading = headings.find((h) => h.depth === 2 && matchChallenge([c], h));
-      const target = (heading?.text ?? c.name).trim().toLowerCase();
-      const section = sections.find((s) => stripMarkdown(s.heading).toLowerCase() === target);
+      // The rendered heading text has SmartyPants quotes / dashes, the raw
+      // Markdown heading does not: compare both normalized.
+      const target = normalizeName(heading?.text ?? c.name);
+      const section = sections.find((s) => normalizeName(stripMarkdown(s.heading)) === target);
       docs.push({
         type: 'challenge',
         title: c.name,

@@ -74,8 +74,10 @@ Vài từ sẽ gặp:
    (ví dụ `cscv-2025`). Trong thư mục đó, chuột phải → **New File** → `index.md`.
 3. Dán khung bài ở [mục 12](#12-file-mẫu-đầy-đủ-để-copy) và viết bài.
 4. Kéo thả ảnh từ máy vào thư mục bài (có thể tạo thư mục con `images/`).
-5. Bấm biểu tượng **Source Control** (hình nhánh cây) ở thanh bên trái, gõ ghi chú vào ô
-   Message, rồi bấm **Commit & Push**. Bài, ảnh và mọi thay đổi được đăng cùng lúc.
+5. Bấm biểu tượng **Source Control** (hình nhánh cây) ở thanh bên trái. Bấm dấu **+** cạnh dòng
+   **Changes** để chọn tất cả thay đổi (cả bài lẫn ảnh), gõ ghi chú vào ô Message, rồi bấm
+   **Commit & Push**. Nếu hiện hộp hỏi có muốn stage tất cả thay đổi không, chọn **Yes**. Bài và ảnh
+   được đăng cùng lúc.
 
 **Hoặc dùng giao diện GitHub thường:**
 
@@ -203,7 +205,7 @@ challenges:
 | --- | --- | --- |
 | `title` | ✅ | Tiêu đề bài. |
 | `description` | ✅ | 1–2 câu tóm tắt. Hiện trên thẻ bài ở trang chủ, trong kết quả Google và RSS. |
-| `pubDate` | ✅ | Ngày đăng, **bắt buộc dạng `YYYY-MM-DD`** (năm-tháng-ngày), ví dụ `2025-10-20`. Viết `20/10/2025` sẽ bị báo lỗi. Bài mới nhất hiện đầu tiên. |
+| `pubDate` | ✅ | Ngày đăng, **bắt buộc dạng `YYYY-MM-DD`** (năm-tháng-ngày), ví dụ `2025-10-20`. Viết `20/10/2025` sẽ bị báo lỗi. Nhưng **đảo tháng và ngày** (`2025-20-10`) thì **không** báo lỗi mà thành một ngày khác, nên sau khi build hãy xem ngày hiện dưới tiêu đề bài. Bài mới nhất hiện đầu tiên. |
 | `updatedDate` | | Ngày cập nhật gần nhất, cũng dạng `YYYY-MM-DD`. Thêm vào khi sửa bài. |
 | `tags` | | Danh sách tag, ví dụ `['ctf', 'writeup', 'cscv']`. Mỗi tag có trang riêng ở `/tags/`. Nên viết chữ thường. |
 | `draft` | | `true` là bài nháp: **không** hiện trên web, chỉ hiện khi chạy `npm run dev`. |
@@ -236,6 +238,8 @@ board xếp theo thứ tự của danh sách này, nên hãy liệt kê **theo �
 - **Chữ thì luôn bọc nháy đơn**, kể cả khi toàn số: `name: '2048'`, `rank: '12'`. Viết `rank: 12`
   sẽ bị báo lỗi.
 - **Số** (`points`, `solves`) và `true`/`false` (`draft`) thì **không** bọc nháy.
+- Dòng bắt đầu bằng `#` là ghi chú, bị bỏ qua hoàn toàn. File mẫu có sẵn vài dòng như
+  `# updatedDate: ...`: muốn dùng thì xoá dấu `#` và dấu cách ở đầu dòng.
 - Chữ có dấu `:` hoặc `#` bắt buộc phải bọc nháy. Quên với `:` thì build báo lỗi. Quên với `#` thì
   **không** báo lỗi, nhưng mất luôn phần từ `#` trở đi (`title: CTF #1` thành `CTF`).
 - Trong nháy đơn, muốn viết dấu `'` thì gõ hai lần: `'Tri''s team'`. Hoặc bọc bằng nháy kép:
@@ -310,8 +314,11 @@ với thứ tự trong sidebar.
 ### Tên challenge phải khớp như thế nào?
 
 Tiêu đề `## ...` và `name` được so sánh **không phân biệt hoa/thường**. Khi so sánh, web bỏ qua
-khoảng trắng thừa và các dấu nháy (`'`, `"`). Vì vậy `## Baby-Rev` vẫn khớp với `name: 'baby-rev'`,
-và `## Baby's First Pwn` khớp với `name: "Baby's First Pwn"`.
+khoảng trắng thừa và các dấu nháy (`'`, `"`), và coi `--`, `—` như `-`. Vì vậy `## Baby-Rev` vẫn
+khớp với `name: 'baby-rev'`, và `## Baby's First Pwn` khớp với `name: "Baby's First Pwn"`.
+
+Trong tiêu đề, web tự đổi `'` thành `’` và `--` thành `—` (`## a--b` hiện thành `a—b`). Muốn giữ
+nguyên từng ký tự thì bọc tên trong backtick: ``## `a--b` ``.
 
 Ngoài những trường hợp đó, chỉ cần khác một ký tự (`baby_rev`, `baby-rev 2`, thêm dấu `!`...) là
 không khớp. Khi đó:
@@ -339,8 +346,10 @@ Cách sửa xem [mục 10](#10-lỗi-thường-gặp-và-cách-sửa).
 - **Hoa/thường phải khớp tuyệt đối.** Máy chủ build chạy Linux, nên `IDA.png` và `ida.png` là hai
   file khác nhau. Trên Windows/macOS, `npm run build` vẫn có thể chạy được dù sai, nhưng máy chủ
   sẽ báo lỗi.
-- Muốn đổi tên file mà chỉ khác hoa/thường, dùng lệnh `git mv IDA.png ida.png`. Đổi trong File
-  Explorer hay Finder thì git không nhận ra.
+- Muốn đổi tên file mà chỉ khác hoa/thường, chạy lệnh `git mv` trong thư mục `Web_Blog` với
+  **đường dẫn đầy đủ**, ví dụ
+  `git mv src/content/writeups/cscv-2025/images/IDA.png src/content/writeups/cscv-2025/images/ida.png`,
+  rồi commit và push như Bước 6. Đổi trong File Explorer hay Finder thì git không nhận ra.
 - Phần trong `[...]` là mô tả ảnh (alt text) cho người dùng trình đọc màn hình. Nên viết rõ ảnh
   đang cho thấy gì.
 - PNG, JPG, WebP, GIF, AVIF, SVG đều được. Khi build, web tự chuyển ảnh sang WebP cho nhẹ, nên ảnh
@@ -437,11 +446,13 @@ git push
     - Tạo token ở GitHub → **Settings → Developer settings → Personal access tokens → Tokens
       (classic)** (chọn quyền `repo`), rồi dán token vào ô `Password`.
     - Hoặc cài GitHub CLI (<https://cli.github.com/>) và chạy `gh auth login` một lần.
-- Nếu `git push` báo `! [rejected] main -> main (fetch first)`, nghĩa là trên GitHub có commit mà
-  máy bạn chưa có (ví dụ bạn vừa sửa bài trên web). Chạy `git pull --rebase` rồi `git push` lại.
+- Nếu `git push` báo `! [rejected]` kèm `(fetch first)`, nghĩa là trên GitHub có commit mà máy bạn
+  chưa có (ví dụ bạn vừa sửa bài trên web). Chạy `git pull --rebase` rồi `git push` lại.
 - Nếu `git pull --rebase` báo `CONFLICT`, nghĩa là cùng một đoạn đã bị sửa ở cả hai nơi. Cách xử lý:
-  1. Mở file được nêu tên, tìm đoạn nằm giữa `<<<<<<<` và `>>>>>>>`.
-  2. Giữ lại nội dung đúng, xoá 3 dòng đánh dấu.
+  1. Mở file được nêu tên, tìm đoạn bắt đầu bằng dòng `<<<<<<< ...` và kết thúc bằng dòng
+     `>>>>>>> ...`. Ở giữa có một dòng `=======` ngăn hai phiên bản: phía trên là bản trên GitHub,
+     phía dưới là bản của bạn.
+  2. Giữ lại nội dung đúng, xoá **cả 3 dòng** đánh dấu `<<<<<<<`, `=======`, `>>>>>>>`.
   3. Chạy `git add <tên-file>`, rồi `git -c core.editor=true rebase --continue`, rồi `git push`.
 
 **Theo dõi quá trình đăng:**
@@ -474,7 +485,8 @@ Ví dụ sau giải, bạn làm lại được thêm một challenge:
 
 3. Thêm phần `## heap-heaven` cùng các bước `###` vào thân bài, đặt cạnh các challenge cùng category.
 4. Thêm (hoặc sửa) dòng `updatedDate: 2025-10-25` ngay dưới dòng `pubDate`, **sát lề trái** (không
-   đặt trong `ctf:` hay `challenges:`), để người đọc biết bài vừa cập nhật.
+   đặt trong `ctf:` hay `challenges:`), để người đọc biết bài vừa cập nhật. Nếu file đang có dòng
+   `# updatedDate: ...` (từ file mẫu), nhớ xoá dấu `#` ở đầu dòng.
 5. Đăng như [Bước 6](#8-bước-6--đăng-lên-web).
 
 ## 10. Lỗi thường gặp và cách sửa
@@ -493,7 +505,7 @@ Ví dụ sau giải, bạn làm lại được thêm một challenge:
 | `pubDate: Ngày phải viết dạng YYYY-MM-DD` | Ngày viết sai dạng, ví dụ `20/10/2025`. | `pubDate: 2025-10-20`. |
 | `title: Required`, `description: Required`... | Thiếu một trường bắt buộc. | Thêm trường đó. Nếu báo thiếu **cùng lúc nhiều trường** dù bạn đã viết đủ, nghĩa là thiếu dòng `---` ở đầu hoặc cuối frontmatter. |
 | `ctf.url: Invalid URL` | `ctf.url` không phải link đầy đủ. | Viết đủ `https://...`. |
-| `Could not find requested image ./images/abc.png` | Sai đường dẫn ảnh, chưa upload ảnh, hoặc sai hoa/thường. | Kiểm tra tên file và thư mục cho khớp tuyệt đối (xem [Bước 4](#6-bước-4--chèn-ảnh-code-và-các-thứ-khác)). |
+| ``Could not find requested image `./images/abc.png` `` | Sai đường dẫn ảnh, chưa upload ảnh, hoặc sai hoa/thường. | Kiểm tra tên file và thư mục cho khớp tuyệt đối (xem [Bước 4](#6-bước-4--chèn-ảnh-code-và-các-thứ-khác)). |
 | `Nested mappings are not allowed in compact mappings` | Có dấu `:` trong chữ mà không bọc nháy, ví dụ `title: Write-up: CSCV`. | Bọc nháy đơn: `title: 'Write-up: CSCV'`. |
 | `Tabs are not allowed as indentation` | Thụt lề bằng phím Tab. | Xoá Tab, thụt lề bằng dấu cách (2 dấu cách mỗi cấp). |
 | `A block sequence may not be used as an implicit map key` hoặc `All sequence items must start at the same column` | Dòng `- name:` thụt lề lệch so với các challenge khác (hay gặp khi thêm challenge mới). | Cho dấu `-` thẳng cột với các dòng `- name:` khác. |
@@ -527,7 +539,7 @@ Mẹo: đặt tiêu đề challenge **không dấu** thì id dễ đoán hơn nh
 
 - [ ] Giải đã **kết thúc**, và luật của giải cho phép công bố write-up.
 - [ ] Không để lộ token, mật khẩu, IP/máy chủ riêng tư trong ảnh hoặc code.
-- [ ] `pubDate` viết dạng `YYYY-MM-DD`.
+- [ ] `pubDate` viết dạng `YYYY-MM-DD` (năm-tháng-ngày), và ngày hiện dưới tiêu đề bài là đúng.
 - [ ] Mỗi challenge trong `challenges:` có một `## ...` cùng tên trong bài (hoặc có `id` trỏ đúng
   tiêu đề), và trên challenge board không có thẻ nào bị mờ.
 - [ ] `category`, `difficulty` viết đúng hoa/thường; `points` là số, không bọc nháy.
