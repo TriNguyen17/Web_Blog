@@ -279,10 +279,12 @@ const isActive = (href: string) => {
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || nav.dataset.open !== 'true') return;
       // Esc already handled by a dialog on top (search).
-      if (e.defaultPrevented || (e.target as Element).closest?.('dialog')) return;
+      if (e.defaultPrevented || document.querySelector('dialog[open]')) return;
       setOpen(false);
       toggle.focus({ preventScroll: true });
     });
+    // A search result on this page was followed: get out of its way.
+    document.addEventListener('search:follow', () => setOpen(false));
     document.addEventListener('click', (e) => {
       const target = e.target as Element;
       if (target.closest?.('dialog')) return; // clicks inside the search dialog

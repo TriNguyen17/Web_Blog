@@ -228,8 +228,9 @@ cho lưới ảnh và bản lớn cho lightbox. Ảnh xuất hiện ở trang al
 ## 6. Tuỳ chỉnh
 
 - **Thông tin cá nhân, link profile** (GitHub, LinkedIn, HackTheBox, picoCTF, CyberDefenders),
-  hero, menu: `src/config.ts`. Profile nào còn để handle mẫu (`your-handle`, `000000`) sẽ
-  tự động bị ẩn khỏi trang About và footer; điền link thật vào là nó hiện ra.
+  hero, menu: `src/config.ts`. Profile nào còn giá trị mẫu (`your-handle`, `000000`) ở link
+  hoặc handle sẽ tự động bị ẩn khỏi trang About và footer; điền cả link lẫn handle thật là
+  nó hiện ra.
 - **Màu sắc**: token trong `src/styles/global.css` (`--accent`, `--bg`, màu từng category `--cat-*`).
 - **Thêm category**: thêm vào `CATEGORIES` trong `src/lib/ctf.ts` và một dòng `--cat-<slug>` +
   `[data-cat='<slug>']` trong `global.css`.

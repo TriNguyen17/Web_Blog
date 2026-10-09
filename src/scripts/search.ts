@@ -209,12 +209,17 @@ export function initSearch() {
 
   // Set when the dialog closes because a same-page result (#anchor) was
   // followed: the browser then moves the focus starting point to that heading,
-  // and focus must not be pulled back to the header.
+  // and focus must not be pulled back to the header. The mobile menu / TOC
+  // drawer underneath close too ('search:follow').
   let followedInPage = false;
-  const followsInPage = (link: HTMLAnchorElement, e?: MouseEvent) =>
-    !(e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0)) &&
-    link.pathname === location.pathname &&
-    link.hash !== '';
+  function follow(link: HTMLAnchorElement, e: MouseEvent) {
+    followedInPage =
+      !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) &&
+      link.pathname === location.pathname &&
+      link.hash !== '';
+    if (followedInPage) document.dispatchEvent(new CustomEvent('search:follow'));
+    dialog!.close();
+  }
 
   async function open() {
     if (dialog!.open) return;
@@ -260,9 +265,7 @@ export function initSearch() {
       const link = options()[active];
       if (link) {
         e.preventDefault();
-        followedInPage = followsInPage(link);
-        dialog.close();
-        link.click();
+        link.click(); // closes the dialog (below), then navigates
       }
     }
   });
@@ -279,9 +282,7 @@ export function initSearch() {
   // Close when following a result (also covers same-page #anchors).
   list.addEventListener('click', (e) => {
     const link = (e.target as HTMLElement).closest('a');
-    if (!link) return;
-    followedInPage = followsInPage(link, e);
-    dialog.close();
+    if (link) follow(link, e);
   });
 
   document.addEventListener('keydown', (e) => {

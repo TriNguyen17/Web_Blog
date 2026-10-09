@@ -42,7 +42,7 @@ const ALL_SOCIALS: Social[] = [
   { name: 'CyberDefenders', url: 'https://cyberdefenders.org/p/your-handle', handle: 'your-handle', icon: 'cyberdefenders' },
 ];
 
-const isPlaceholder = (s: Social) => /your-|\/000000$/.test(`${s.url} ${s.handle}`);
+const isPlaceholder = (s: Social) => /your-/.test(s.url) || /your-/.test(s.handle) || /\/0{6}\/?$/.test(s.url);
 export const SOCIALS: Social[] = ALL_SOCIALS.filter((s) => !isPlaceholder(s));
 
 export const NAV = [
