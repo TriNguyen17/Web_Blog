@@ -19,7 +19,16 @@
  * Needs `rehypeHeadingIds` to run before it (see astro.config.mjs).
  */
 
-const normalize = (s) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+/** Same rules as normalize() in src/lib/ctf.ts. */
+const normalize = (s) =>
+  s
+    .normalize('NFC')
+    .replace(/[‘’'“”"]/g, '')
+    .replace(/…/g, '...')
+    .replace(/[–—]|-{2,}/g, '-')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
 
 /** Same rules as matchChallenge() in src/lib/ctf.ts. */
 function findChallenge(challenges, id, text) {
@@ -70,8 +79,9 @@ export default function rehypeCtfSections() {
     let step = null; // current h3 section
 
     for (const node of tree.children) {
-      // MDX import/export statements must stay at the top level.
-      if (node.type === 'mdxjsEsm') {
+      // MDX import/export statements and the footnote list (GFM) stay at the
+      // top level, after the last challenge rather than inside its Flag step.
+      if (node.type === 'mdxjsEsm' || (node.type === 'element' && node.properties?.dataFootnotes !== undefined)) {
         out.push(node);
         continue;
       }

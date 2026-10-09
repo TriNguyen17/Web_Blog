@@ -39,7 +39,9 @@ challenges:
 
 ### Lỗ hổng / Phân tích
 
+<!-- Chèn ảnh: đặt file vào images/ rồi bỏ dấu comment ở dòng dưới (ảnh phải có thật, nếu không build sẽ lỗi).
 ![Mô tả ảnh](./images/ten-anh.png)
+-->
 
 ### Ý tưởng khai thác
 
