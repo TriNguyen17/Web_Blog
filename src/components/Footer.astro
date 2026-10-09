@@ -14,9 +14,15 @@ const year = new Date().getFullYear();
     </p>
     <ul class="site-footer__links" aria-label="Liên kết">
       {
-        SOCIALS.slice(0, 2).map((s) => (
+        SOCIALS.slice(0, 3).map((s) => (
           <li>
-            <a class="icon-btn" href={s.url} rel="me noopener" target="_blank" aria-label={s.name}>
+            <a
+              class="icon-btn"
+              href={s.url}
+              rel={/^https?:/.test(s.url) ? 'me noopener' : undefined}
+              target={/^https?:/.test(s.url) ? '_blank' : undefined}
+              aria-label={s.name}
+            >
               <Icon name={s.icon} size={18} />
             </a>
           </li>

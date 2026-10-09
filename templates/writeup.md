@@ -39,7 +39,10 @@ challenges:
 
 ### Lỗ hổng / Phân tích
 
+<!-- Có ảnh thật trong images/ thì sửa tên file ở dòng ảnh, rồi xoá 2 dòng mở/đóng comment bao quanh nó. -->
+<!--
 ![Mô tả ảnh](./images/ten-anh.png)
+-->
 
 ### Ý tưởng khai thác
 

@@ -86,20 +86,23 @@ const stats = [
           <h2 class="about__side-title">Liên hệ & profile</h2>
           <ul class="link-list">
             {
-              SOCIALS.map((s) => (
-                <li>
-                  <a href={s.url} target="_blank" rel="me noopener">
-                    <span class="link-list__icon">
-                      <Icon name={s.icon} size={18} />
-                    </span>
-                    <span class="link-list__text">
-                      <span class="link-list__name">{s.name}</span>
-                      <span class="link-list__handle">{s.handle}</span>
-                    </span>
-                    <Icon name="external" size={14} />
-                  </a>
-                </li>
-              ))
+              SOCIALS.map((s) => {
+                const external = /^https?:/.test(s.url);
+                return (
+                  <li>
+                    <a href={s.url} target={external ? '_blank' : undefined} rel={external ? 'me noopener' : undefined}>
+                      <span class="link-list__icon">
+                        <Icon name={s.icon} size={18} />
+                      </span>
+                      <span class="link-list__text">
+                        <span class="link-list__name">{s.name}</span>
+                        <span class="link-list__handle">{s.handle}</span>
+                      </span>
+                      {external && <Icon name="external" size={14} />}
+                    </a>
+                  </li>
+                );
+              })
             }
           </ul>
         </div>
@@ -224,6 +227,7 @@ const stats = [
   }
 
   .link-list__icon {
+    flex: none;
     display: grid;
     place-items: center;
     width: 36px;
@@ -236,6 +240,7 @@ const stats = [
   .link-list__text {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     line-height: 1.3;
   }
 
@@ -247,6 +252,7 @@ const stats = [
     font-family: var(--font-mono);
     font-size: 0.76rem;
     color: var(--text-faint);
+    overflow-wrap: anywhere;
   }
 
   .link-list a > :global(svg:last-child) {

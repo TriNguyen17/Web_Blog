@@ -56,7 +56,9 @@ export function stripMarkdown(body = '') {
   const codes: string[] = [];
   return body
     .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/`([^`]*)`/g, (_, code: string) => `\u0000${codes.push(code) - 1}\u0000`)
+    .replace(/\[\^[^\]]*\]:?/g, ' ')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/<\/?[a-zA-Z][^>]*>/g, ' ')

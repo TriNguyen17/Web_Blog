@@ -48,7 +48,20 @@ export interface TocGroup {
   items: TocEntry[];
 }
 
-const normalize = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+/**
+ * Compare a challenge name with its heading text: case and extra spaces do not
+ * matter, and neither do the typographic quotes, dashes and ellipses that
+ * SmartyPants puts in headings (`Baby's` is rendered `Baby’s`).
+ */
+export const normalizeName = (s: string) =>
+  s
+    .normalize('NFC')
+    .replace(/[‘’'“”"]/g, '')
+    .replace(/…/g, '...')
+    .replace(/[–—]|-{2,}/g, '-')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
 
 /**
  * Match a heading against the frontmatter challenge list: by explicit `id`
@@ -60,7 +73,7 @@ export function matchChallenge(
 ): ChallengeMeta | undefined {
   return (
     challenges.find((c) => c.id && c.id === heading.slug) ??
-    challenges.find((c) => normalize(c.name) === normalize(heading.text))
+    challenges.find((c) => normalizeName(c.name) === normalizeName(heading.text))
   );
 }
 
@@ -73,6 +86,7 @@ export function matchChallenge(
 export function buildToc(headings: MarkdownHeading[], challenges: ChallengeMeta[]) {
   const entries: TocEntry[] = [];
   for (const h of headings) {
+    if (h.slug === 'footnote-label') continue; // hidden "Footnotes" heading (GFM)
     if (h.depth === 2) {
       entries.push({ slug: h.slug, text: h.text, challenge: matchChallenge(challenges, h), children: [] });
     } else if (h.depth === 3 && entries.length > 0) {
