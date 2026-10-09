@@ -30,12 +30,14 @@ export const HERO = {
 };
 
 export type Social = { name: string; url: string; handle: string; icon: SocialIcon };
-export type SocialIcon = 'github' | 'linkedin' | 'htb' | 'picoctf' | 'cyberdefenders' | 'mail' | 'rss';
+export type SocialIcon = 'github' | 'facebook' | 'linkedin' | 'htb' | 'picoctf' | 'cyberdefenders' | 'mail' | 'rss';
 
 /** Replace the placeholder handles with your own profiles. Entries still
  *  holding a placeholder ('your-…', '000000') are left out of the site. */
 const ALL_SOCIALS: Social[] = [
   { name: 'GitHub', url: 'https://github.com/TriNguyen17', handle: 'TriNguyen17', icon: 'github' },
+  { name: 'Facebook', url: 'https://www.facebook.com/trik4z3', handle: 'trik4z3', icon: 'facebook' },
+  { name: 'Email', url: 'mailto:daitruongphat105@gmail.com', handle: 'daitruongphat105@gmail.com', icon: 'mail' },
   { name: 'LinkedIn', url: 'https://www.linkedin.com/in/your-handle', handle: 'your-handle', icon: 'linkedin' },
   { name: 'HackTheBox', url: 'https://app.hackthebox.com/profile/000000', handle: 'your-htb-name', icon: 'htb' },
   { name: 'picoCTF', url: 'https://play.picoctf.org/users/your-handle', handle: 'your-handle', icon: 'picoctf' },

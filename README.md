@@ -106,6 +106,9 @@ npm run preview   # xem bản build
 
 ## 4. Viết một CTF write-up mới
 
+> Hướng dẫn chi tiết từng bước (kể cả cách đăng ngay trên GitHub không cần cài gì, và bảng lỗi
+> thường gặp): [`docs/huong-dan-dang-writeup-ctf.md`](docs/huong-dan-dang-writeup-ctf.md).
+
 Mỗi **cuộc thi = một file**. Cách nhanh nhất là copy `templates/writeup.md`:
 
 ```bash
