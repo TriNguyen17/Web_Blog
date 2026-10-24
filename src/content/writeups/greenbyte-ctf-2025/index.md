@@ -6,7 +6,6 @@ tags: ['ctf', 'writeup', 'greenbyte']
 cover: './images/decompile-main.png'
 ctf:
   name: 'GreenByte CTF 2025'
-  url: 'https://ctftime.org/'
   date: '03–05/10/2025'
   format: 'Jeopardy'
   team: 'b0tnet'
@@ -42,7 +41,7 @@ challenges:
 GreenByte CTF năm nay khá "dễ thở" ở nửa đầu bảng điểm nhưng đuối dần về sau. Team mình
 cày được đa số các bài Easy–Medium. Bài viết này mình ghi lại 5 challenge mình trực tiếp
 giải, mỗi bài theo đúng mạch: **tìm hiểu → phân tích lỗ hổng → ý tưởng khai thác →
-PoC → flag**. Bạn có thể dùng mục lục bên trái để nhảy nhanh tới từng bài.
+PoC → flag**. Bạn có thể dùng mục lục (thanh bên trái trên máy tính, nút **Mục lục** trên điện thoại) để nhảy nhanh tới từng bài.
 
 ## babycrack
 
@@ -80,7 +79,7 @@ for (i = 0; i < 0x1d; i++) {
 Mỗi ký tự được kiểm tra **độc lập** với nhau — không có trạng thái nào truyền từ byte này
 sang byte khác. Đây là dấu hiệu tốt: ta có thể giải ngược từng byte một.
 
-Phép biến đổi cho mỗi byte là: `ENC[i] = (input[i] ^ KEY[i % 4] + i) & 0xff`.
+Phép biến đổi cho mỗi byte là: `ENC[i] = ((input[i] ^ KEY[i % 4]) + i) & 0xff`.
 
 Trong đó `KEY = {0x13, 0x37, 0xc0, 0xde}`, và mảng `ENC` nằm ở `.rodata`:
 
@@ -410,6 +409,7 @@ Không có **stack canary**, lại **No PIE** (địa chỉ `win` cố định) 
 2. Lấy địa chỉ `win` (No PIE nên tĩnh): `objdump`/`pwntools`.
 3. Payload = `b"A" * 72 + p64(win)`.
 
+> [!TIP]
 > Một chi tiết nhỏ nhưng hay quên: nhiều libc yêu cầu **stack alignment 16-byte** trước
 > lệnh `call` trong `system`. Nếu bị crash ở `movaps`, chèn thêm một gadget `ret` trước
 > địa chỉ `win` để căn lại stack.
@@ -417,8 +417,10 @@ Không có **stack canary**, lại **No PIE** (địa chỉ `win` cố định) 
 Xác nhận offset bằng cyclic pattern:
 
 ```bash
-$ cyclic 100 | ./warmup        # rồi trong gdb:
-$ cyclic -l faaa               # -> 72
+$ cyclic 100 > pat && gdb -q ./warmup
+pwndbg> run < pat              # crash tại ret
+pwndbg> x/s $rsp               # -> "saaataaauaaa..."
+$ cyclic -l saaa               # -> 72
 ```
 
 ### Proof-of-concept
@@ -460,7 +462,7 @@ GBCTF{r3t2w1n_1s_a_g00d_f1rst_pwn}
 
 Năm bài trên trải khá đều các category nền tảng của CTF. Điểm chung của các bài Easy–Medium
 thường là **nhận diện đúng pattern** (xor khả nghịch, DNS exfil, small-`e` RSA, SSTI,
-ret2win) hơn là kỹ thuật cao siêu. Mình học được nhất ở bài `silent-whisper` — nhắc bản
+ret2win) hơn là kỹ thuật cao siêu. Mình học được nhiều nhất ở bài `silent-whisper` — nhắc bản
 thân rằng lưu lượng DNS cũng đáng soi kỹ như HTTP.
 
 Cảm ơn bạn đã đọc tới đây. Nếu có cách giải hay hơn hoặc mình sai chỗ nào, cứ ping mình

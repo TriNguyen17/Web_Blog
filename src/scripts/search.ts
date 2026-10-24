@@ -29,7 +29,7 @@ interface PreparedDoc {
 const TYPE_LABEL: Record<SearchDoc['type'], string> = {
   writeup: 'write-up',
   challenge: 'challenge',
-  photo: 'photo',
+  photo: 'ảnh',
 };
 
 /** Lower-case + strip Vietnamese diacritics, keeping string length stable. */
@@ -57,34 +57,77 @@ function prepare(doc: SearchDoc): PreparedDoc {
   };
 }
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const reCache = new Map<string, { start: RegExp; whole: RegExp }>();
+
+/**
+ * Words match at the start of a word of the (folded) text: "anh" finds "ảnh"
+ * but not the end of "nhanh", "may" finds "máy" and "maybe". Longer words
+ * (4+ letters) may also match inside identifiers (`xfil` in `exfil`).
+ */
+function wordRes(w: string) {
+  let re = reCache.get(w);
+  if (!re) {
+    const e = escapeRe(w);
+    re = { start: new RegExp(`(?:^|[^a-z0-9])${e}`, 'g'), whole: new RegExp(`(?:^|[^a-z0-9])${e}(?![a-z0-9])`) };
+    reCache.set(w, re);
+  }
+  return re;
+}
+
+/** Start offsets of the matches of `w` in folded text `hay`. */
+function matches(hay: string, w: string): number[] {
+  const re = wordRes(w).start;
+  re.lastIndex = 0;
+  const out: number[] = [];
+  for (let m = re.exec(hay); m; m = re.exec(hay)) {
+    out.push(m.index + m[0].length - w.length);
+    if (m[0].length === 0) re.lastIndex += 1;
+  }
+  if (!out.length && w.length >= 4) {
+    for (let i = hay.indexOf(w); i !== -1; i = hay.indexOf(w, i + w.length)) out.push(i);
+  }
+  return out;
+}
+
+const has = (hay: string, w: string) => matches(hay, w).length > 0;
+const whole = (hay: string, w: string) => wordRes(w).whole.test(hay);
+
 function score(p: PreparedDoc, words: string[], tags: string[]) {
   for (const tag of tags) if (!p.tags.some((t) => t.startsWith(tag))) return 0;
 
   let total = tags.length * 6;
   for (const w of words) {
     let s = 0;
-    if (p.title.includes(w)) s += p.title.startsWith(w) || p.title.includes(` ${w}`) ? 14 : 10;
-    if (p.tags.some((t) => t.includes(w))) s += 6;
-    if (p.meta.includes(w)) s += 4;
-    if (p.description.includes(w)) s += 3;
-    if (p.text.includes(w)) s += 1;
+    if (has(p.title, w)) s += p.title.startsWith(w) ? 14 : 10;
+    if (p.tags.some((t) => has(t, w))) s += 6;
+    if (has(p.meta, w)) s += 4;
+    if (has(p.description, w)) s += 3;
+    if (has(p.text, w)) s += 1;
     if (s === 0) return 0; // every word must match somewhere
+    // Whole words beat prefixes ("may" -> "máy" over "maybe").
+    if (whole(p.title, w) || whole(p.description, w)) s += 2;
+    else if (whole(p.text, w)) s += 1;
     total += s;
+  }
+  // The whole phrase, in order, is the strongest signal.
+  if (words.length > 1) {
+    const phrase = words.join(' ');
+    if (p.title.includes(phrase)) total += 12;
+    else if (p.description.includes(phrase)) total += 8;
+    else if (p.text.includes(phrase)) total += 5;
   }
   if (p.doc.type !== 'challenge') total += 0.5; // prefer whole posts on ties
   return total;
 }
 
-/** Append `text` to `parent`, wrapping every occurrence of `words` in <mark>. */
+/** Append `text` to `parent`, wrapping every match of `words` in <mark>. */
 function highlight(parent: HTMLElement, text: string, words: string[]) {
   const folded = fold(text);
   const ranges: [number, number][] = [];
   for (const w of words) {
-    let i = folded.indexOf(w);
-    while (w && i !== -1) {
-      ranges.push([i, i + w.length]);
-      i = folded.indexOf(w, i + w.length);
-    }
+    if (!w) continue;
+    for (const i of matches(folded, w)) ranges.push([i, i + w.length]);
   }
   ranges.sort((a, b) => a[0] - b[0]);
 
@@ -101,10 +144,10 @@ function highlight(parent: HTMLElement, text: string, words: string[]) {
 }
 
 function snippet(p: PreparedDoc, words: string[]) {
-  const source = p.doc.description && words.some((w) => p.description.includes(w)) ? 'description' : 'text';
+  const source = p.doc.description && words.some((w) => has(p.description, w)) ? 'description' : 'text';
   const original = source === 'description' ? p.doc.description : p.doc.text;
   const folded = source === 'description' ? p.description : p.text;
-  const hit = words.map((w) => folded.indexOf(w)).find((i) => i >= 0) ?? -1;
+  const hit = words.map((w) => matches(folded, w)[0] ?? -1).find((i) => i >= 0) ?? -1;
   if (hit < 0) return p.doc.description || p.doc.text.slice(0, 140);
   const start = Math.max(0, hit - 50);
   return `${start > 0 ? '…' : ''}${original.slice(start, start + 160)}${start + 160 < original.length ? '…' : ''}`;

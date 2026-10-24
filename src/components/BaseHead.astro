@@ -14,6 +14,10 @@ export interface SeoProps {
   modifiedTime?: Date;
   tags?: string[];
   noindex?: boolean;
+  /** Alt text of the share image (defaults to the page title). */
+  imageAlt?: string;
+  /** Structured data (schema.org) for this page. */
+  jsonLd?: Record<string, unknown>;
 }
 
 const {
@@ -25,14 +29,33 @@ const {
   modifiedTime,
   tags = [],
   noindex = false,
+  imageAlt,
+  jsonLd,
 } = Astro.props as SeoProps;
 
 const fullTitle = title ? `${title} · ${SITE.brand}` : SITE.title;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 
+// Share cards are 1200x630: local images are cropped to that size.
 const imagePath =
-  typeof image === 'string' ? url(image) : (await getImage({ src: image, width: 1200, format: 'jpg' })).src;
+  typeof image === 'string'
+    ? url(image)
+    : (await getImage({ src: image, width: 1200, height: 630, fit: 'cover', format: 'jpg' })).src;
 const ogImage = new URL(imagePath, Astro.site);
+const ogAlt = imageAlt ?? title ?? SITE.title;
+
+const siteUrl = new URL(url('/'), Astro.site).href;
+const structured = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.title,
+    url: siteUrl,
+    inLanguage: SITE.lang,
+    author: { '@type': 'Person', name: SITE.author },
+  },
+  ...(jsonLd ? [{ '@context': 'https://schema.org', ...jsonLd }] : []),
+];
 ---
 
 <meta charset="utf-8" />
@@ -57,6 +80,9 @@ const ogImage = new URL(imagePath, Astro.site);
 <meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={ogAlt} />
 {publishedTime && <meta property="article:published_time" content={publishedTime.toISOString()} />}
 {modifiedTime && <meta property="article:modified_time" content={modifiedTime.toISOString()} />}
 {type === 'article' && tags.map((tag) => <meta property="article:tag" content={tag} />)}
@@ -66,3 +92,6 @@ const ogImage = new URL(imagePath, Astro.site);
 <meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={ogAlt} />
+
+{!noindex && <script type="application/ld+json" set:html={JSON.stringify(structured).replace(/</g, "\\u003c")} />}

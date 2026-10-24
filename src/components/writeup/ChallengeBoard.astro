@@ -1,5 +1,5 @@
 ---
-import { CATEGORIES, categorySlug, type ChallengeMeta, type CategoryKey } from '../../lib/ctf';
+import { CATEGORIES, DIFFICULTIES, categorySlug, type ChallengeMeta, type CategoryKey } from '../../lib/ctf';
 import Icon from '../Icon.astro';
 
 interface Props {
@@ -9,13 +9,15 @@ interface Props {
 const { groups } = Astro.props;
 const all = groups.flatMap((g) => g.challenges);
 const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
+/** Baby = 1 … Insane = 5 filled pips. */
+const level = (d?: string) => DIFFICULTIES.indexOf(d as (typeof DIFFICULTIES)[number]) + 1;
 ---
 
 <section class="board" id="challenge-board" aria-labelledby="board-title">
   <div class="board__head">
     <h2 class="board__title" id="board-title">Challenge board</h2>
     <p class="board__stats">
-      <span><strong>{all.length}</strong> challenges</span>
+      <span><strong>{all.length}</strong> challenge</span>
       <span><strong>{totalPoints}</strong> pts</span>
     </p>
   </div>
@@ -26,7 +28,9 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
         <div class="board__group" data-cat={categorySlug(group.category)}>
           <h3 class="board__cat">
             <span class="board__cat-name">{CATEGORIES[group.category].name}</span>
-            <span class="board__cat-count">{group.challenges.length}</span>
+            <span class="board__cat-short" aria-hidden="true">{CATEGORIES[group.category].label}</span>
+            <span class="board__cat-count" aria-hidden="true">{group.challenges.length}</span>
+            <span class="sr-only">({group.challenges.length} challenge)</span>
           </h3>
           <ul class="board__grid">
             {group.challenges.map((c) => (
@@ -37,8 +41,20 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
                       <Icon name="check" size={14} />
                     </span>
                     <span class="board-card__name">{c.name}</span>
-                    <span class="board-card__pts">{c.points}</span>
-                    {c.difficulty && <span class="board-card__diff">{c.difficulty}</span>}
+                    <span class="board-card__pts">
+                      {c.points}
+                      <span class="board-card__unit">pts</span>
+                    </span>
+                    {c.difficulty && (
+                      <span class="board-card__diff" data-diff={c.difficulty.toLowerCase()}>
+                        <span class="pips" aria-hidden="true">
+                          {DIFFICULTIES.map((_, i) => (
+                            <span class={i < level(c.difficulty) ? 'pip pip--on' : 'pip'} />
+                          ))}
+                        </span>
+                        {c.difficulty}
+                      </span>
+                    )}
                   </a>
                 ) : (
                   <span class="board-card board-card--missing" title="Chưa có lời giải trong bài">
@@ -115,6 +131,7 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
   /* Each group spans two rows of the parent grid (title, cards) via subgrid,
      so cards line up even when a category title wraps to two lines. */
   .board__group {
+    --cat: var(--c);
     display: grid;
     grid-row: span 2;
     grid-template-rows: subgrid;
@@ -151,6 +168,16 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
     background: linear-gradient(90deg, color-mix(in srgb, var(--c) 40%, transparent), transparent);
   }
 
+  .board__cat-short {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .board__cat-short {
+      display: inline;
+    }
+  }
+
   .board__cat-count {
     padding: 0 7px;
     font-size: 0.7rem;
@@ -169,6 +196,7 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
   }
 
   .board-card {
+    --c: var(--accent);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -180,8 +208,9 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
     padding: 16px 32px 14px;
     text-align: center;
     color: var(--text);
-    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    border-top: 3px solid var(--cat, var(--accent));
     border-radius: var(--radius);
     transition:
       background-color 0.18s var(--ease),
@@ -211,14 +240,46 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
     font-family: var(--font-mono);
     font-size: 1.35rem;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .board-card__unit {
+    margin-left: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
   }
 
   .board-card__diff {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     font-size: 0.68rem;
     color: var(--text);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+  }
+
+  .pips {
+    display: inline-flex;
+    gap: 3px;
+  }
+
+  .pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--text-faint) 45%, transparent);
+  }
+
+  .board-card__diff[data-diff='baby'] { --d: var(--diff-baby); }
+  .board-card__diff[data-diff='easy'] { --d: var(--diff-easy); }
+  .board-card__diff[data-diff='medium'] { --d: var(--diff-medium); }
+  .board-card__diff[data-diff='hard'] { --d: var(--diff-hard); }
+  .board-card__diff[data-diff='insane'] { --d: var(--diff-insane); }
+
+  .pip--on {
+    background: var(--d, var(--accent));
   }
 
   .board-card__solved {
@@ -241,9 +302,50 @@ const totalPoints = all.reduce((sum, c) => sum + c.points, 0);
     border-color: var(--border);
   }
 
+  /* Phones: two category columns and shorter cards, so the board does not
+     push the write-up several screens down. */
   @media (max-width: 600px) {
     .board {
       padding: 16px;
+    }
+
+    .board__groups {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px 10px;
+    }
+
+    .board__cat {
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+    }
+
+    .board__cat-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .board-card {
+      min-height: 0;
+      padding: 20px 10px 10px;
+    }
+
+    .board-card__name {
+      overflow-wrap: break-word;
+    }
+
+    .board-card__solved {
+      top: 5px;
+      right: 5px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .board-card__pts {
+      font-size: 1.1rem;
     }
   }
 </style>

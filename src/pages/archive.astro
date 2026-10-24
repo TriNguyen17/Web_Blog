@@ -1,0 +1,279 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getWriteups, getPhotoPosts, writeupUrl, photoPostUrl } from '../lib/posts';
+import { categorySlug, matchChallenge } from '../lib/ctf';
+import { formatDate, isoDate } from '../lib/utils';
+
+/**
+ * Everything on the blog, newest first, grouped by year: write-ups (with
+ * their challenges as deep links) and photo albums.
+ */
+const [writeups, photos] = await Promise.all([getWriteups(), getPhotoPosts()]);
+
+const vnYear = new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
+
+type Row =
+  | {
+      kind: 'writeup';
+      date: Date;
+      title: string;
+      href: string;
+      meta: string;
+      challenges: { name: string; href?: string; category: string; points: number }[];
+    }
+  | { kind: 'photo'; date: Date; title: string; href: string; meta: string };
+
+const rows: Row[] = [];
+for (const e of writeups) {
+  const { headings } = await render(e);
+  const href = writeupUrl(e);
+  rows.push({
+    kind: 'writeup',
+    date: e.data.pubDate,
+    title: e.data.title,
+    href,
+    meta: [e.data.ctf.rank && `hạng ${e.data.ctf.rank}`, `${e.data.challenges.length} challenge`]
+      .filter(Boolean)
+      .join(' · '),
+    challenges: e.data.challenges.map((c) => {
+      const h = headings.find((x) => x.depth === 2 && matchChallenge([c], x));
+      return { name: c.name, href: h ? `${href}#${h.slug}` : undefined, category: c.category, points: c.points };
+    }),
+  });
+}
+for (const p of photos) {
+  rows.push({
+    kind: 'photo',
+    date: p.data.pubDate,
+    title: p.data.title,
+    href: photoPostUrl(p),
+    meta: [`${p.data.photos.length} ảnh`, p.data.location].filter(Boolean).join(' · '),
+  });
+}
+rows.sort((a, b) => b.date.valueOf() - a.date.valueOf());
+
+const years = new Map<string, Row[]>();
+for (const r of rows) {
+  const y = vnYear.format(r.date);
+  if (!years.has(y)) years.set(y, []);
+  years.get(y)!.push(r);
+}
+const challengeCount = writeups.reduce((n, e) => n + e.data.challenges.length, 0);
+const photoCount = photos.reduce((n, p) => n + p.data.photos.length, 0);
+---
+
+<BaseLayout title="Lưu trữ" description="Toàn bộ write-up CTF và album ảnh trên blog, theo thời gian.">
+  <div class="page container">
+    <header class="page-header">
+      <p class="eyebrow">git log --all</p>
+      <h1>Lưu trữ</h1>
+      <p>
+        {writeups.length} write-up · {challengeCount} challenge · {photos.length} album ({photoCount} ảnh).
+      </p>
+    </header>
+
+    {
+      rows.length === 0 ? (
+        <p class="empty-state">Chưa có bài viết nào.</p>
+      ) : (
+        [...years].map(([year, items]) => (
+          <section class="year" aria-labelledby={`y-${year}`}>
+            <h2 class="year__title" id={`y-${year}`}>
+              {year}
+              <span class="year__count">{items.length} bài</span>
+            </h2>
+            <ol class="log">
+              {items.map((r) => (
+                <li class="log__row">
+                  <time class="log__date" datetime={isoDate(r.date)}>
+                    {formatDate(r.date).slice(0, 5)}
+                  </time>
+                  <span class={`log__kind log__kind--${r.kind}`}>{r.kind === 'writeup' ? '[ctf]' : '[ảnh]'}</span>
+                  <div class="log__body">
+                    <a class="log__title" href={r.href}>
+                      {r.title}
+                    </a>
+                    <span class="log__meta">{r.meta}</span>
+                    {r.kind === 'writeup' && r.challenges.length > 0 && (
+                      <details class="log__details">
+                        <summary>Xem {r.challenges.length} challenge</summary>
+                        <ul class="log__challenges">
+                          {r.challenges.map((c) => (
+                            <li>
+                              <span class="cat-badge" data-cat={categorySlug(c.category as never)}>
+                                {c.category}
+                              </span>
+                              {c.href ? <a href={c.href}>{c.name}</a> : <span>{c.name}</span>}
+                              <span class="log__pts">{c.points} pts</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .year + .year {
+    margin-top: 40px;
+  }
+
+  .year__title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 14px;
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+  }
+
+  .year__title::before {
+    content: '##';
+    content: '##' / '';
+    color: var(--accent);
+  }
+
+  .year__count {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-faint);
+  }
+
+  .log {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-left: 1px solid var(--border);
+  }
+
+  .log__row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 54px 52px minmax(0, 1fr);
+    gap: 4px 12px;
+    align-items: baseline;
+    padding: 12px 0 12px 20px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  /* A commit dot on the timeline */
+  .log__row::before {
+    content: '';
+    position: absolute;
+    top: 19px;
+    left: -5px;
+    width: 9px;
+    height: 9px;
+    background: var(--bg);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+  }
+
+  .log__date,
+  .log__kind,
+  .log__meta,
+  .log__pts {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .log__date {
+    color: var(--text-faint);
+  }
+
+  .log__kind--writeup {
+    color: var(--accent-text);
+  }
+
+  .log__kind--photo {
+    color: var(--text-muted);
+  }
+
+  .log__body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    min-width: 0;
+  }
+
+  .log__title {
+    font-weight: 600;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .log__title:hover {
+    color: var(--accent);
+  }
+
+  .log__meta {
+    color: var(--text-muted);
+  }
+
+  .log__details {
+    flex-basis: 100%;
+    font-size: 0.88rem;
+  }
+
+  .log__details summary {
+    width: fit-content;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .log__details summary:hover {
+    color: var(--accent);
+  }
+
+  .log__challenges {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 2px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .log__challenges li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .log__challenges a {
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+
+  .log__challenges a:hover {
+    color: var(--accent);
+  }
+
+  .log__pts {
+    color: var(--text-faint);
+  }
+
+  @media (max-width: 600px) {
+    .log__row {
+      grid-template-columns: auto auto;
+      justify-content: start;
+      padding-left: 16px;
+    }
+
+    .log__body {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

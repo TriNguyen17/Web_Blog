@@ -255,6 +255,20 @@ kbd {
 
 /* Fixed, not absolute: focusing it (Shift+Tab from the header mid-page) must
    not scroll the page back to the top. */
+/* Long unbroken words (render_template_string_injection, long tags) wrap
+   instead of pushing the page sideways on phones. */
+h1,
+h2,
+h3,
+.tag,
+.breadcrumb {
+  overflow-wrap: anywhere;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
 .skip-link {
   position: fixed;
   left: 12px;
@@ -362,6 +376,16 @@ kbd {
 .btn:hover {
   border-color: var(--accent-border);
   color: var(--text);
+}
+
+.btn[hidden] {
+  display: none;
+}
+
+.btn--sm {
+  padding: 6px 12px;
+  font-size: 0.84rem;
+  min-height: 36px;
 }
 
 .btn--primary {
@@ -533,6 +557,9 @@ a.tag:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: 20px;
+  /* Cards keep their own height: a short photo card next to a tall
+     write-up card should not get a band of empty space. */
+  align-items: start;
 }
 
 /* ==========================================================================
@@ -541,10 +568,12 @@ a.tag:hover {
 @media (prefers-reduced-motion: no-preference) {
   /* An animation (not a transition) on `translate` (not `transform`), so it
      never conflicts with the hover effects of cards. */
-  .js [data-reveal]:not(.is-visible) {
+  /* Only elements below the fold at load get .reveal-pending (reveal.ts):
+     what is visible straight away paints at once (no LCP delay). */
+  .reveal-pending:not(.is-visible) {
     opacity: 0;
   }
-  .js [data-reveal].is-visible {
+  .reveal-pending.is-visible {
     animation: reveal 0.6s var(--ease);
   }
   @keyframes reveal {

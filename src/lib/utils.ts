@@ -5,20 +5,51 @@ export function url(path = '/') {
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-const dateFormatter = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+/**
+ * Dates are shown in Vietnam time, whatever the time zone of the machine
+ * that builds the site (GitHub Actions runs in UTC): a date written as
+ * 2025-10-20 stays 20/10/2025, also in <time datetime>.
+ */
+const TIME_ZONE = 'Asia/Ho_Chi_Minh';
+const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: TIME_ZONE,
+});
+const isoFormatter = new Intl.DateTimeFormat('en-CA', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: TIME_ZONE,
+});
 
 export const formatDate = (date: Date) => dateFormatter.format(date);
-export const isoDate = (date: Date) => date.toISOString().slice(0, 10);
+/** YYYY-MM-DD in Vietnam time. */
+export const isoDate = (date: Date) => isoFormatter.format(date);
 
-/** Tag -> URL-safe slug ("Đà Lạt" -> "da-lat"). */
+/**
+ * Tag -> URL-safe slug ("Đà Lạt" -> "da-lat", "C++" -> "c-plus-plus").
+ * Tags without any Latin letter or digit (emoji, CJK) get a short stable
+ * hash instead of an empty slug.
+ */
 export function slugify(input: string) {
-  return input
+  const slug = input
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/gi, 'd')
+    .replace(/\+/g, ' plus ')
+    .replace(/#/g, ' sharp ')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+  if (slug) return slug;
+  let hash = 2166136261;
+  for (const ch of input.normalize('NFC')) {
+    hash ^= ch.codePointAt(0)!;
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return `tag-${hash.toString(36)}`;
 }
 
 /** Rough reading time of a Markdown body (code counts a bit less). */

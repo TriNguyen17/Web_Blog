@@ -1,6 +1,6 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { ImageMetadata } from 'astro';
-import { CATEGORIES, type CategoryKey } from './ctf';
+import { CATEGORIES, pointsByCategory, type CategoryKey } from './ctf';
 import { slugify, url } from './utils';
 
 export type Writeup = CollectionEntry<'writeups'>;
@@ -43,6 +43,11 @@ export interface FeedItem {
   categories: CategoryKey[];
   photoCount?: number;
   ctfName?: string;
+  /** Write-ups: competition summary for the scoreboard card. */
+  ctf?: { name: string; format?: string; team?: string; rank?: string };
+  solved?: number;
+  points?: number;
+  catPoints?: { category: CategoryKey; points: number; count: number }[];
 }
 
 export function writeupToFeed(entry: Writeup): FeedItem {
@@ -57,6 +62,10 @@ export function writeupToFeed(entry: Writeup): FeedItem {
     cover: entry.data.cover,
     categories: writeupCategories(entry).map((c) => c.category),
     ctfName: entry.data.ctf.name,
+    ctf: entry.data.ctf,
+    solved: entry.data.challenges.length,
+    points: entry.data.challenges.reduce((sum, c) => sum + c.points, 0),
+    catPoints: pointsByCategory(entry.data.challenges),
   };
 }
 
@@ -115,10 +124,17 @@ export async function getTags() {
   const feed = await getFeed();
   const tags = new Map<string, { tag: string; slug: string; items: FeedItem[] }>();
   for (const item of feed) {
+    const seen = new Set<string>();
     for (const tag of item.tags) {
       const slug = slugify(tag);
-      if (!tags.has(slug)) tags.set(slug, { tag, slug, items: [] });
-      tags.get(slug)!.items.push(item);
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      const entry = tags.get(slug);
+      if (!entry) tags.set(slug, { tag, slug, items: [item] });
+      else {
+        if (entry.tag !== tag) console.warn(`[tags] "${tag}" and "${entry.tag}" share the URL /tags/${slug}/`);
+        entry.items.push(item);
+      }
     }
   }
   return [...tags.values()].sort((a, b) => b.items.length - a.items.length || a.tag.localeCompare(b.tag));

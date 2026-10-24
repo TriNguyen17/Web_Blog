@@ -16,7 +16,20 @@ export const GET: APIRoute = async () => {
 
   for (const entry of writeups) {
     const href = writeupUrl(entry);
-    const body = stripMarkdown(entry.body);
+    // Whole-post doc: the intro and the sections that are not challenges
+    // ("Lời kết"...). Challenge text lives in the challenge docs below, so a
+    // snippet never mixes two challenges (or shows another one's flag).
+    const { headings } = await render(entry);
+    const sections = splitH2Sections(entry.body);
+    const challengeHeadings = new Set(
+      entry.data.challenges
+        .map((c) => headings.find((h) => h.depth === 2 && matchChallenge([c], h))?.text ?? c.name)
+        .map(normalizeName),
+    );
+    const firstH2 = entry.body?.search(/^##\s/m) ?? -1;
+    const intro = firstH2 > 0 ? entry.body!.slice(0, firstH2) : sections.length ? '' : (entry.body ?? '');
+    const other = sections.filter((s) => !challengeHeadings.has(normalizeName(stripMarkdown(s.heading))));
+    const body = stripMarkdown([intro, ...other.map((s) => `## ${s.heading}\n${s.body}`)].join('\n'));
     docs.push({
       type: 'writeup',
       title: entry.data.title,
@@ -25,12 +38,10 @@ export const GET: APIRoute = async () => {
       description: entry.data.description,
       tags: entry.data.tags,
       meta: entry.data.ctf.name,
-      text: body.slice(0, 4000),
+      text: body.slice(0, 6000),
     });
 
     // Per-challenge docs: deep link to the heading, text of its own section.
-    const { headings } = await render(entry);
-    const sections = splitH2Sections(entry.body);
     for (const c of entry.data.challenges) {
       const heading = headings.find((h) => h.depth === 2 && matchChallenge([c], h));
       // The rendered heading text has SmartyPants quotes / dashes, the raw

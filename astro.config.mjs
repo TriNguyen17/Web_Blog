@@ -4,6 +4,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import { unified, rehypeHeadingIds } from '@astrojs/markdown-remark';
 import rehypeCtfSections from './src/plugins/rehype-ctf-sections.mjs';
+import rehypeCallouts from './src/plugins/rehype-callouts.mjs';
 
 /**
  * Domain + sub-path of the deployed site.
@@ -31,12 +32,19 @@ export default defineConfig({
   markdown: {
     // Keep the remark/rehype pipeline so standard rehype plugins work.
     processor: unified({
+      // Vietnamese labels for GFM footnotes (screen readers).
+      remarkRehype: {
+        footnoteLabel: 'Chú thích',
+        footnoteBackLabel: (/** @type {number} */ i, /** @type {number} */ r) => `Quay lại chỗ tham chiếu ${i + 1}${r > 1 ? `-${r}` : ''}`,
+      },
       rehypePlugins: [
         // Give headings their ids first, so the CTF plugin can read them.
         rehypeHeadingIds,
         // Wrap every challenge (h2) and step (h3) of a write-up in <section>s
         // and inject the challenge meta (category, difficulty, points).
         rehypeCtfSections,
+        // > [!NOTE] / [!TIP] / [!IMPORTANT] / [!WARNING] / [!CAUTION]
+        rehypeCallouts,
       ],
     }),
     shikiConfig: {

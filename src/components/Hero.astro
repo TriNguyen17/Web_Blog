@@ -1,7 +1,32 @@
 ---
 import { HERO, SITE } from '../config';
 import { url } from '../lib/utils';
+import { parseRank } from '../lib/ctf';
+import { writeupUrl, photoPostUrl, type Writeup, type PhotoPost } from '../lib/posts';
 import Icon from './Icon.astro';
+
+interface Props {
+  writeups: Writeup[];
+  photos: PhotoPost[];
+}
+
+/**
+ * Hero with a terminal that prints real, linked content (newest write-ups,
+ * CTF totals, albums), built at every deploy. The lines "type" in once per
+ * session when motion is allowed; otherwise they are just there.
+ */
+const { writeups, photos } = Astro.props;
+const whoami = HERO.terminal[0];
+const recent = writeups.slice(0, 3);
+const challenges = writeups.reduce((n, w) => n + w.data.challenges.length, 0);
+const points = writeups.reduce((n, w) => n + w.data.challenges.reduce((s, c) => s + c.points, 0), 0);
+const best = writeups
+  .map((w) => parseRank(w.data.ctf.rank))
+  .filter((r) => r !== undefined)
+  .sort((a, b) => a!.top - b!.top)[0];
+const albums = photos.slice(0, 2);
+let line = 0;
+const next = () => `--i:${line++}`;
 ---
 
 <section class="hero">
@@ -20,27 +45,81 @@ import Icon from './Icon.astro';
       </div>
     </div>
 
-    <div class="hero__terminal" aria-hidden="true">
-      <div class="term">
-        <div class="term__bar">
+    <div class="hero__terminal">
+      <section class="term" aria-label="Terminal: nội dung mới nhất trên blog">
+        <div class="term__bar" aria-hidden="true">
           <span class="term__dot"></span><span class="term__dot"></span><span class="term__dot"></span>
           <span class="term__title">{SITE.brand}@blog: ~</span>
         </div>
         <div class="term__body">
-          {
-            HERO.terminal.map((line) => (
-              <>
-                <p class="term__line"><span class="term__prompt">$</span> {line.cmd}</p>
-                <p class="term__out">{line.out}</p>
-              </>
-            ))
-          }
-          <p class="term__line"><span class="term__prompt">$</span> <span class="term__cursor"></span></p>
+          {whoami && (
+            <div class="term__block term__block--whoami">
+              <p class="term__line" style={next()}><span class="term__prompt" aria-hidden="true">$</span> {whoami.cmd}</p>
+              <p class="term__out" style={next()}>{whoami.out}</p>
+            </div>
+          )}
+
+          {recent.length > 0 && (
+            <div class="term__block">
+              <p class="term__line" style={next()}><span class="term__prompt" aria-hidden="true">$</span> ls -t writeups/ | head -{recent.length}</p>
+              <ul class="term__out term__list" style={next()}>
+                {recent.map((w) => (
+                  <li>
+                    <a href={writeupUrl(w)}>{w.id}/</a>
+                    {w.data.ctf.rank && <span class="term__dim"> # hạng {w.data.ctf.rank}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {challenges > 0 && (
+            <div class="term__block">
+              <p class="term__line" style={next()}><span class="term__prompt" aria-hidden="true">$</span> ctf --stats</p>
+              <p class="term__out" style={next()}>
+                <span class="term__num">{writeups.length}</span> giải · <span class="term__num">{challenges}</span> challenge ·{' '}
+                <span class="term__num">{points}</span> pts
+                {best && (
+                  <>
+                    {' '}· tốt nhất <span class="term__num">#{best.pos}</span>
+                    <span class="term__dim">/{best.total}</span>
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+
+          {albums.length > 0 && (
+            <div class="term__block term__block--photos">
+              <p class="term__line" style={next()}><span class="term__prompt" aria-hidden="true">$</span> ls photos/</p>
+              <ul class="term__out term__list" style={next()}>
+                {albums.map((p) => (
+                  <li>
+                    <a href={photoPostUrl(p)}>{p.id}/</a>
+                    <span class="term__dim"> ({p.data.photos.length} ảnh)</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <p class="term__line" style={next()} aria-hidden="true"><span class="term__prompt">$</span> <span class="term__cursor"></span></p>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 </section>
+
+<script is:inline>
+  // Type the terminal in once per session (skipped with reduced motion).
+  (function () {
+    try {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || sessionStorage.getItem('hero-typed')) return;
+      sessionStorage.setItem('hero-typed', '1');
+      document.documentElement.classList.add('hero-type');
+    } catch (e) {}
+  })();
+</script>
 
 <style>
   .hero {
@@ -154,6 +233,48 @@ import Icon from './Icon.astro';
     color: var(--text-muted);
   }
 
+  .term__body .term__list {
+    margin: 0 0 10px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .term__list a {
+    color: var(--accent-text);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  .term__list a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .term__dim {
+    color: var(--text-faint);
+  }
+
+  .term__num {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Typing effect: each line is uncovered left to right, one after another. */
+  :global(.hero-type) .term__body > :is(p, div) > *,
+  :global(.hero-type) .term__body > p {
+    animation: term-type 0.32s steps(18, end) both;
+    animation-delay: calc(var(--i, 0) * 170ms + 150ms);
+  }
+
+  @keyframes term-type {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
   .term__cursor {
     display: inline-block;
     width: 8px;
@@ -180,8 +301,10 @@ import Icon from './Icon.astro';
       grid-template-columns: 1fr;
     }
 
-    .hero__terminal {
-      order: -1;
+    /* Phones and tablets: text first, then a shorter terminal. */
+    .term__block--whoami,
+    .term__block--photos {
+      display: none;
     }
   }
 </style>

@@ -9,15 +9,19 @@ interface Props {
   options: Option[];
   allLabel?: string;
   label: string;
+  /** Number of items; chips matching all of them would do nothing and are left out. */
+  total?: number;
 }
 
-const { options, allLabel = 'Tất cả', label } = Astro.props;
+const { options, allLabel = 'Tất cả', label, total } = Astro.props;
+const useful = options.filter((o) => total === undefined || o.count === undefined || o.count < total);
 ---
 
+{useful.length > 0 && (
 <div class="chips filter-bar" role="group" aria-label={label}>
   <button class="chip" type="button" data-filter="all" aria-pressed="true">{allLabel}</button>
   {
-    options.map((opt) => (
+    useful.map((opt) => (
       <button class="chip" type="button" data-filter={opt.value} aria-pressed="false">
         {opt.label}
         {opt.count !== undefined && <span class="chip__count">{opt.count}</span>}
@@ -25,6 +29,7 @@ const { options, allLabel = 'Tất cả', label } = Astro.props;
     ))
   }
 </div>
+)}
 
 <style>
   .filter-bar {

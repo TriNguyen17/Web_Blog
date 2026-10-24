@@ -5,9 +5,11 @@ import Icon from '../Icon.astro';
 interface Props {
   toc: TocGroup[];
   ctfName: string;
+  /** False when the write-up has no challenge list (no board to link to). */
+  hasBoard?: boolean;
 }
 
-const { toc, ctfName } = Astro.props;
+const { toc, ctfName, hasBoard = true } = Astro.props;
 const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).length;
 ---
 
@@ -15,7 +17,7 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
   <div class="toc__head">
     <div>
       <p class="toc__label">Mục lục</p>
-      <p class="toc__ctf">{ctfName} · {challengeCount} challenges</p>
+      <p class="toc__ctf">{ctfName}{challengeCount > 0 && <span class="nowrap"> · {challengeCount} challenge</span>}</p>
     </div>
     <div class="toc__tools">
       <button class="toc__tool" type="button" data-toc-expand-all title="Mở rộng tất cả" aria-label="Mở rộng tất cả">
@@ -31,9 +33,11 @@ const challengeCount = toc.flatMap((g) => g.items).filter((i) => i.challenge).le
   </div>
 
   <nav class="toc__scroll" data-toc-scroll>
-    <a class="toc__overview" href="#challenge-board" data-toc-link="challenge-board">
-      <Icon name="terminal" size={14} /> Challenge board
-    </a>
+    {hasBoard && (
+      <a class="toc__overview" href="#challenge-board" data-toc-link="challenge-board">
+        <Icon name="terminal" size={14} /> Challenge board
+      </a>
+    )}
 
     {
       toc.map((group) => (

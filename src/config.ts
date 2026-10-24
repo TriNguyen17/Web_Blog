@@ -18,7 +18,7 @@ export const SITE = {
 } as const;
 
 export const HERO = {
-  greeting: 'Xin chào, mình là Tri 👋',
+  greeting: 'Xin chào, mình là Tri',
   intro:
     'Sinh viên ngành An toàn thông tin. Mình chơi CTF — chủ yếu là Reverse Engineering và Forensics — và ghi lại lời giải ở đây. Thỉnh thoảng cũng đăng vài tấm ảnh đời thường.',
   /** Lines typed in the terminal box of the hero section. */

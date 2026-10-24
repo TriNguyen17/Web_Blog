@@ -1,16 +1,15 @@
 /**
- * Fade-in on scroll for every element marked with [data-reveal].
- * The hidden state only applies under `html.js` (see global.css), so content
- * stays visible without JavaScript.
+ * Fade-in on scroll for elements marked with [data-reveal] that start below
+ * the fold. Elements already on screen at load are left alone, so they paint
+ * immediately. The hidden state is a class added here, so content stays
+ * visible without JavaScript.
  */
 export function initReveal(root: ParentNode = document) {
-  const targets = root.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)');
-  if (!targets.length) return;
-
-  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    targets.forEach((el) => el.classList.add('is-visible'));
-    return;
-  }
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const below = [...root.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)')].filter(
+    (el) => el.getBoundingClientRect().top > window.innerHeight,
+  );
+  if (!below.length) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
@@ -22,5 +21,8 @@ export function initReveal(root: ParentNode = document) {
     },
     { rootMargin: '0px 0px -8% 0px', threshold: 0.01 },
   );
-  targets.forEach((el) => observer.observe(el));
+  for (const el of below) {
+    el.classList.add('reveal-pending');
+    observer.observe(el);
+  }
 }

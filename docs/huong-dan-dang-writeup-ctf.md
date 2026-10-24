@@ -302,8 +302,9 @@ Tên các bước `###` bạn đặt tuỳ ý: `### Recon`, `### Lỗ hổng`, `
 
 - Tiêu đề phải bắt đầu bằng **từ "Flag"**, hoa/thường đều được: `### Flag`, `### Flag:`, `### flag 1`.
   Còn `### Flags`, `### Lấy flag` hay `### 🚩 Flag` thì **không** được tô xanh.
-- Viết flag trong cặp backtick, ví dụ `` `CSCV{...}` ``. Như vậy flag mới nằm trong khung xanh và
-  giữ nguyên từng ký tự. Viết trơn thì web có thể tự đổi `--` thành `—`, hay `'` thành `’`.
+- Viết flag trong cặp backtick, ví dụ `` `CSCV{...}` ``. Như vậy flag mới nằm trong khung xanh, có
+  nút chép flag, và giữ nguyên từng ký tự. Viết trơn thì web có thể tự đổi `--` thành `—`, hay `'`
+  thành `’`.
 
 ### Thứ tự challenge trong bài
 
@@ -385,6 +386,7 @@ Một số tên ngôn ngữ hay dùng: `python`, `c`, `cpp`, `asm` (hoặc `nasm
 | Danh sách | `- ý 1` hoặc `1. bước 1` |
 | Trích dẫn đề bài | `> Mô tả đề...`. Muốn xuống dòng trong trích dẫn thì chèn một dòng chỉ có `>`. |
 | Chú thích cuối trang | `câu văn[^1]`, và ở cuối bài: `[^1]: nội dung chú thích`. |
+| Khung ghi chú màu | dòng đầu `> [!NOTE]`, các dòng sau `> nội dung` (xem ví dụ dưới) |
 | Bảng | xem ví dụ ngay dưới đây |
 
 ```markdown
@@ -394,6 +396,16 @@ Một số tên ngôn ngữ hay dùng: `python`, `c`, `cpp`, `asm` (hoặc `nasm
 ```
 
 Dòng `| --- | --- |` là bắt buộc, thiếu nó thì bảng không hiện.
+
+**Khung ghi chú màu** (giống GitHub) dùng cho mẹo, cảnh báo, điểm cần nhớ:
+
+```markdown
+> [!TIP]
+> Nếu bị crash ở `movaps`, chèn thêm một gadget `ret` để căn lại stack.
+```
+
+Có 5 loại: `[!NOTE]` (Ghi chú), `[!TIP]` (Mẹo), `[!IMPORTANT]` (Quan trọng), `[!WARNING]`
+(Cảnh báo), `[!CAUTION]` (Thận trọng). Viết sai tên loại thì nó hiện thành trích dẫn bình thường.
 
 > **Lưu ý:** blog **không** hiển thị công thức LaTeX (`$...$`, `$$...$$`). Với công thức toán
 > trong Crypto, hãy viết trong khối code (` ```text `) hoặc viết bằng chữ thường, ví dụ

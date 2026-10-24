@@ -12,6 +12,12 @@ const year = new Date().getFullYear();
       <span class="site-footer__prompt" aria-hidden="true">$</span> echo "© {year} {SITE.author}" ·{' '}
       <a href="https://astro.build" rel="noopener">built with Astro</a>
     </p>
+    <nav class="site-footer__nav" aria-label="Liên kết phụ">
+      <span aria-hidden="true">ls</span>
+      <a href={url('/archive/')}>archive/</a>
+      <a href={url('/tags/')}>tags/</a>
+      <a href={url('/rss.xml')}>rss.xml</a>
+    </nav>
     <ul class="site-footer__links" aria-label="Liên kết">
       {
         SOCIALS.slice(0, 3).map((s) => (
@@ -65,10 +71,28 @@ const year = new Date().getFullYear();
   }
 
   .site-footer__copy a {
+    white-space: nowrap;
     color: var(--text-muted);
     text-decoration: underline;
     text-decoration-color: var(--border);
     text-underline-offset: 3px;
+  }
+
+  .site-footer__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent-text);
+  }
+
+  .site-footer__nav a {
+    color: var(--text-muted);
+  }
+
+  .site-footer__nav a:hover {
+    color: var(--accent);
   }
 
   .site-footer__copy a:hover {

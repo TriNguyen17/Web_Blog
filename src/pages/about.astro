@@ -2,21 +2,46 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
 import { SITE, SOCIALS, HERO } from '../config';
-import { url } from '../lib/utils';
-import { getWriteups, getPhotoPosts } from '../lib/posts';
-import { CATEGORIES, type CategoryKey } from '../lib/ctf';
+import { url, isoDate } from '../lib/utils';
+import { getWriteups, getPhotoPosts, writeupUrl } from '../lib/posts';
+import { CATEGORIES, DIFFICULTIES, categorySlug, parseRank, type CategoryKey } from '../lib/ctf';
 
+/**
+ * About page as a small CTF résumé: everything below is computed from the
+ * write-up frontmatter (ctf.* and challenges), so it updates with each post.
+ */
 const [writeups, photos] = await Promise.all([getWriteups(), getPhotoPosts()]);
-const totalChallenges = writeups.reduce((sum, e) => sum + e.data.challenges.length, 0);
+const allChallenges = writeups.flatMap((e) => e.data.challenges);
+const totalPoints = allChallenges.reduce((sum, c) => sum + c.points, 0);
+const nf = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
 
-const solvesByCat = new Map<CategoryKey, number>();
-for (const e of writeups) for (const c of e.data.challenges) solvesByCat.set(c.category, (solvesByCat.get(c.category) ?? 0) + 1);
-const topCats = [...solvesByCat].sort((a, b) => b[1] - a[1]);
+const competitions = writeups.map((e) => ({
+  href: writeupUrl(e),
+  name: e.data.ctf.name,
+  date: e.data.ctf.date,
+  when: e.data.pubDate,
+  format: e.data.ctf.format,
+  team: e.data.ctf.team,
+  rank: e.data.ctf.rank,
+  parsed: parseRank(e.data.ctf.rank),
+  solved: e.data.challenges.length,
+  points: e.data.challenges.reduce((sum, c) => sum + c.points, 0),
+  cats: [...new Set(e.data.challenges.map((c) => c.category))],
+}));
+const best = competitions.filter((c) => c.parsed).sort((a, b) => a.parsed!.top - b.parsed!.top)[0];
+
+// Category x difficulty matrix (rows: categories with at least one solve).
+const cats = (Object.keys(CATEGORIES) as CategoryKey[]).filter((k) => allChallenges.some((c) => c.category === k));
+const cell = (cat: CategoryKey, diff: string) =>
+  allChallenges.filter((c) => c.category === cat && c.difficulty === diff).length;
+const rowTotal = (cat: CategoryKey) => allChallenges.filter((c) => c.category === cat).length;
+const showUnrated = allChallenges.some((c) => !c.difficulty);
 
 const stats = [
-  { label: 'Write-ups', value: writeups.length },
-  { label: 'Challenges', value: totalChallenges },
-  { label: 'Albums ảnh', value: photos.length },
+  { label: 'Giải CTF', value: writeups.length },
+  { label: 'Challenge', value: allChallenges.length },
+  { label: 'Điểm', value: totalPoints },
+  { label: 'Album ảnh', value: photos.length },
 ];
 ---
 
@@ -48,20 +73,96 @@ const stats = [
         </ul>
 
         {
-          topCats.length > 0 && (
+          competitions.length > 0 && (
             <>
-              <h2>Số challenge đã giải theo category</h2>
-              <ul class="about__cats">
-                {topCats.map(([cat, n]) => (
-                  <li>
-                    <span class="cat-badge" data-cat={cat.toLowerCase()}>
-                      {cat}
-                    </span>
-                    <span class="about__cat-name">{CATEGORIES[cat].name}</span>
-                    <span class="about__cat-n">{n}</span>
-                  </li>
-                ))}
-              </ul>
+              <h2>Thành tích CTF</h2>
+              <p class="highlight">
+                {best && (
+                  <>
+                    <span class="highlight__label">Hạng tốt nhất</span>{' '}
+                    <strong>{best.parsed!.pos}/{best.parsed!.total}</strong> tại {best.name}
+                    <span class="muted"> (top {nf.format(best.parsed!.top)}%)</span>
+                    <br />
+                  </>
+                )}
+                <span class="highlight__label">Tổng cộng</span> {competitions.length} giải · {allChallenges.length}{' '}
+                challenge · {totalPoints} điểm
+              </p>
+
+              <h2>Lịch sử thi đấu</h2>
+              <div class="table-wrap">
+                <table class="history">
+                  <thead>
+                    <tr>
+                      <th scope="col">Thời gian</th>
+                      <th scope="col">Giải</th>
+                      <th scope="col">Hình thức</th>
+                      <th scope="col">Team</th>
+                      <th scope="col">Hạng</th>
+                      <th scope="col">Đã giải</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competitions.map((c) => (
+                      <tr>
+                        <td data-label="Thời gian">
+                          {c.date ?? <time datetime={isoDate(c.when)}>{isoDate(c.when)}</time>}
+                        </td>
+                        <th scope="row" data-label="Giải">
+                          <a href={c.href}>{c.name}</a>
+                        </th>
+                        <td data-label="Hình thức">{c.format ?? '—'}</td>
+                        <td data-label="Team">{c.team ?? '—'}</td>
+                        <td data-label="Hạng" class="history__rank">
+                          {c.rank ?? '—'}
+                          {c.parsed && <span class="muted"> · top {nf.format(c.parsed.top)}%</span>}
+                        </td>
+                        <td data-label="Đã giải">
+                          {c.solved} challenge · {c.points} pts
+                          <span class="history__cats">
+                            {c.cats.map((cat) => (
+                              <span class="cat-badge" data-cat={categorySlug(cat)}>{cat}</span>
+                            ))}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <h2 id="by-category">Challenge theo category</h2>
+              <div class="table-wrap" tabindex="0" role="region" aria-labelledby="by-category">
+                <table class="matrix">
+                  <caption class="sr-only">Số challenge đã giải theo category và độ khó</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Category</th>
+                      {DIFFICULTIES.map((d) => <th scope="col">{d}</th>)}
+                      {showUnrated && <th scope="col">Khác</th>}
+                      <th scope="col">Tổng</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cats.map((cat) => (
+                      <tr>
+                        <th scope="row">
+                          <span class="cat-badge" data-cat={categorySlug(cat)}>{cat}</span>
+                          <span class="matrix__name">{CATEGORIES[cat].name}</span>
+                        </th>
+                        {DIFFICULTIES.map((d) => {
+                          const n = cell(cat, d);
+                          return <td class={n ? 'matrix__n' : 'matrix__zero'}>{n || '·'}</td>;
+                        })}
+                        {showUnrated && (
+                          <td class="matrix__zero">{allChallenges.filter((c) => c.category === cat && !c.difficulty).length || '·'}</td>
+                        )}
+                        <td class="matrix__total">{rowTotal(cat)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           )
         }
@@ -119,28 +220,139 @@ const stats = [
     align-items: start;
   }
 
-  .about__cats {
-    list-style: none;
-    padding: 0;
+  .highlight {
+    padding: 14px 18px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 1.9;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
   }
 
-  .about__cats li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-soft);
+  .highlight__label {
+    color: var(--text-faint);
   }
 
-  .about__cat-name {
+  .highlight strong {
+    color: var(--accent-text);
+  }
+
+  .muted {
     color: var(--text-muted);
   }
 
-  .about__cat-n {
-    margin-left: auto;
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .about__bio .matrix {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .about__bio :is(.history, .matrix) {
+    width: 100%;
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  .history th[scope='row'] {
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .history__rank {
     font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .history__cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .matrix th,
+  .matrix td {
+    text-align: center;
+    font-family: var(--font-mono);
+  }
+
+  .matrix th[scope='row'] {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    font-family: var(--font-sans);
+    font-weight: 500;
+  }
+
+  .matrix__name {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  .matrix__n {
     font-weight: 700;
-    color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .matrix__zero {
+    color: var(--text-faint);
+  }
+
+  .matrix__total {
+    font-weight: 700;
+  }
+
+  /* Phones: each competition becomes a small labelled card. */
+  @media (max-width: 640px) {
+    .history thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .history,
+    .history tbody,
+    .history tr,
+    .history :is(td, th) {
+      display: block;
+    }
+
+    .history tr {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+    }
+
+    .about__bio .history :is(td, th) {
+      padding: 4px 0;
+      border: 0;
+      background: none;
+    }
+
+    .history :is(td, th)::before {
+      content: attr(data-label);
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .matrix__name {
+      display: none;
+    }
   }
 
   .about__side {
@@ -173,7 +385,7 @@ const stats = [
 
   .stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     margin: 0;
     padding: 0;
@@ -186,7 +398,8 @@ const stats = [
     flex-direction: column;
     gap: 2px;
     padding: 12px 4px;
-    background: var(--bg-sidebar);
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
     border-radius: var(--radius);
   }
 
@@ -262,7 +475,7 @@ const stats = [
 
   @media (max-width: 860px) {
     .about__grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 28px;
     }
 
