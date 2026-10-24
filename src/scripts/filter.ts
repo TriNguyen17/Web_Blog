@@ -9,14 +9,7 @@
  * A chip matches a card when its value equals the card's `data-type`, is one
  * of its `data-cats` (CTF categories) or appears (slugified) in `data-tags`.
  */
-const slug = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/gi, 'd')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+import { slugify as slug } from '../lib/utils';
 
 function setup(root: HTMLElement) {
   const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-filter]')];

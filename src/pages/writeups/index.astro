@@ -41,7 +41,7 @@ const totalChallenges = writeups.reduce((sum, e) => sum + e.data.challenges.leng
         <p class="empty-state">Chưa có write-up nào. Thêm file vào <code>src/content/writeups/</code>.</p>
       ) : (
         <div data-filter-root>
-          <FilterBar options={filterOptions} label="Lọc write-up theo category" />
+          <FilterBar options={filterOptions} total={items.length} label="Lọc write-up theo category" />
           <div class="card-grid" data-filter-items>
             {items.map((item, i) => (
               <PostCard item={item} eager={i < 3} headingLevel={2} />

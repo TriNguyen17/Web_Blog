@@ -68,6 +68,12 @@ function metaBar(challenge) {
 
 const isHeading = (node, depth) => node.type === 'element' && node.tagName === `h${depth}`;
 
+/** "#" link next to a heading: copies the section's URL (src/scripts/share.ts). */
+const anchor = (id, text) =>
+  el('a', { className: ['heading-anchor'], href: `#${id}`, dataCopyLink: '', ariaLabel: `Sao chép liên kết tới mục “${text.trim()}”` }, [
+    el('span', { ariaHidden: 'true' }, [txt('#')]),
+  ]);
+
 export default function rehypeCtfSections() {
   return (tree, file) => {
     const frontmatter = file.data.astro?.frontmatter;
@@ -93,10 +99,14 @@ export default function rehypeCtfSections() {
         if (challenge) {
           node.properties.className = ['ctf-challenge__title'];
           section = el('section', { className: ['ctf-challenge'], dataChallenge: id }, [
-            el('header', { className: ['ctf-challenge__header'], dataReveal: '' }, [node, metaBar(challenge)]),
+            el('header', { className: ['ctf-challenge__header'], dataReveal: '' }, [
+              node,
+              anchor(id, textOf(node)),
+              metaBar(challenge),
+            ]),
           ]);
         } else {
-          section = el('section', { className: ['ctf-section'] }, [node]);
+          section = el('section', { className: ['ctf-section'] }, [node, anchor(id, textOf(node))]);
         }
         out.push(section);
         continue;
@@ -106,6 +116,7 @@ export default function rehypeCtfSections() {
         const isFlag = /^flag\b/i.test(textOf(node).trim());
         step = el('section', { className: isFlag ? ['ctf-step', 'ctf-step--flag'] : ['ctf-step'], dataReveal: '' }, [
           node,
+          anchor(String(node.properties?.id ?? ''), textOf(node)),
         ]);
         section.children.push(step);
         continue;

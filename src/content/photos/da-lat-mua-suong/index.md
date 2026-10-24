@@ -18,12 +18,12 @@ photos:
     date: 2025-09-26
   - src: './images/03-ca-phe-sang.jpg'
     alt: 'Một tách cà phê sữa nóng với hình trái tim trên bàn gỗ'
-    caption: 'Ly cà phê đầu tiên của buổi sáng. Quán nhỏ, nhạc Trịnh, nhợp vibe.'
+    caption: 'Ly cà phê đầu tiên của buổi sáng. Quán nhỏ, nhạc Trịnh, hợp vibe.'
     tags: ['coffee', 'daily']
     date: 2025-09-26
   - src: './images/04-pho-dem.jpg'
-    alt: 'Phố đêm Đà Lạt với ánh đèn vàng ấm từ những ngôi nhà trên đồi'
-    caption: 'Đèn đêm trên những căn nhà bám đồi. Trông như một bo mạch đang sáng.'
+    alt: 'Những toà nhà cao tầng sáng đèn vàng và xanh dưới trăng tròn, trời đầy sao'
+    caption: 'Phố đêm, từng ô cửa sáng đèn. Trông như một bo mạch đang chạy.'
     tags: ['city', 'night']
     date: 2025-09-27
   - src: './images/05-doi-da-quy.jpg'

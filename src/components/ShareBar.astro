@@ -1,0 +1,49 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  title: string;
+}
+
+/** End-of-post sharing: copy link, the system share sheet, Facebook. */
+const { title } = Astro.props;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+const facebook = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+---
+
+<div class="share" aria-label={`Chia sẻ “${title}”`} role="group">
+  <span class="share__prompt" aria-hidden="true">$ share</span>
+  <button class="btn btn--sm" type="button" data-share-copy>
+    <Icon name="copy" size={15} /> <span>Sao chép liên kết</span>
+  </button>
+  <button class="btn btn--sm" type="button" data-share-native hidden>
+    <Icon name="external" size={15} /> Chia sẻ…
+  </button>
+  <a class="btn btn--sm" href={facebook} target="_blank" rel="noopener">
+    <Icon name="facebook" size={15} /> Facebook
+  </a>
+</div>
+
+<style>
+  .share {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 48px;
+    padding: 16px 0 0;
+    border-top: 1px dashed var(--border);
+  }
+
+  .share__prompt {
+    margin-right: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent-text);
+  }
+</style>
+
+<script>
+  import { initShare } from '../scripts/share';
+  initShare();
+</script>

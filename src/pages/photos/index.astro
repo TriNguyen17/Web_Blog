@@ -49,7 +49,7 @@ const filterOptions = [...counts]
                 <span data-filter-count>{photos.length}</span> ảnh
               </span>
             </div>
-            {filterOptions.length > 1 && <FilterBar options={filterOptions} label="Lọc ảnh theo tag" />}
+            <FilterBar options={filterOptions} total={photos.length} label="Lọc ảnh theo tag" />
             <PhotoGallery items={photos} showAlbumLink eager={6} />
             <p class="empty-state" data-filter-empty hidden>
               Không có ảnh nào với tag này.
@@ -58,7 +58,7 @@ const filterOptions = [...counts]
 
           <section class="photos-section" aria-labelledby="albums">
             <div class="section-title">
-              <h2 id="albums">Albums</h2>
+              <h2 id="albums">Album</h2>
             </div>
             <div class="card-grid">
               {albums.map((item) => (

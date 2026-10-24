@@ -4,7 +4,11 @@ import { getTags } from '../../lib/posts';
 import { url } from '../../lib/utils';
 
 const tags = await getTags();
-const max = Math.max(1, ...tags.map((t) => t.items.length));
+const counts = tags.map((t) => t.items.length);
+const max = Math.max(1, ...counts);
+const min = Math.min(max, ...counts);
+// Font scale 0.9–1.45 by count; all equal -> the base size.
+const weight = (n: number) => (max === min ? 1 : 0.9 + ((n - min) / (max - min)) * 0.55);
 ---
 
 <BaseLayout title="Tags" description="Duyệt bài viết theo tag.">
@@ -24,7 +28,7 @@ const max = Math.max(1, ...tags.map((t) => t.items.length));
             <li>
               <a
                 href={url(`/tags/${t.slug}/`)}
-                style={`--w:${0.85 + (t.items.length / max) * 0.9}`}
+                style={`--w:${weight(t.items.length)}`}
               >
                 <span class="tag-cloud__hash">#</span>{t.tag}
                 <span class="tag-cloud__count">{t.items.length}</span>
@@ -47,7 +51,14 @@ const max = Math.max(1, ...tags.map((t) => t.items.length));
     list-style: none;
   }
 
+  .tag-cloud li {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .tag-cloud a {
+    max-width: 100%;
+    overflow-wrap: anywhere;
     display: inline-flex;
     align-items: center;
     gap: 8px;

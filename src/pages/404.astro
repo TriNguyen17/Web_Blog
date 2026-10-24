@@ -13,7 +13,20 @@ cat: <span data-path>…</span>: No such file or directory</code></pre>
       <a class="btn btn--primary" href={url('/')}>Về trang chủ</a>
       <a class="btn" href={url('/writeups/')}>Xem write-ups</a>
     </div>
+
+    <section class="suggest" data-suggest data-index={url('/search.json')} data-base={url('/')} hidden>
+      <h2 class="suggest__title">Có phải bạn muốn tìm…</h2>
+      <p class="suggest__cmd" aria-hidden="true">$ ls | grep -i "<span data-suggest-q></span>"</p>
+      <ul class="suggest__list" data-suggest-list></ul>
+      <p class="suggest__none" data-suggest-none hidden>(không có kết quả gần đúng)</p>
+      <button class="btn btn--sm" type="button" data-search-open>Tìm trên blog</button>
+    </section>
   </div>
+
+  <script>
+    import { initSuggestions } from '../scripts/suggest';
+    initSuggestions();
+  </script>
 
   <script is:inline>
     // The 404 page is built once and served for every unknown URL, so the
@@ -57,6 +70,54 @@ cat: <span data-path>…</span>: No such file or directory</code></pre>
 
   .notfound p {
     color: var(--text-muted);
+  }
+
+  .suggest {
+    margin-top: 44px;
+    padding: 18px 20px;
+    text-align: left;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+  }
+
+  .suggest__title {
+    margin: 0 0 4px;
+    font-size: 1rem;
+  }
+
+  .suggest__cmd,
+  .suggest__none {
+    margin: 0 0 10px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .suggest__list {
+    display: grid;
+    gap: 6px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .suggest__list :global(a) {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    color: var(--text);
+  }
+
+  .suggest__list :global(a:hover) {
+    color: var(--accent);
+  }
+
+  .suggest__list :global(.suggest__type) {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent-text);
   }
 
   .notfound__actions {

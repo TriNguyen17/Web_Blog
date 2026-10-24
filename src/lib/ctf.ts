@@ -126,3 +126,25 @@ export function buildBoard(challenges: ChallengeMeta[], entries: TocEntry[]) {
       .map((c) => ({ ...c, slug: entries.find((e) => e.challenge === c)?.slug })),
   }));
 }
+
+/** "12/356" -> position, field size and top-percentage; undefined otherwise. */
+export function parseRank(rank?: string) {
+  const m = rank?.match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+  if (!m) return undefined;
+  const pos = Number(m[1]);
+  const total = Number(m[2]);
+  if (!pos || !total || pos > total) return undefined;
+  return { pos, total, top: (pos / total) * 100 };
+}
+
+/** Points per category, in board order (first appearance in the list). */
+export function pointsByCategory(challenges: ChallengeMeta[]) {
+  const map = new Map<CategoryKey, { category: CategoryKey; points: number; count: number }>();
+  for (const c of challenges) {
+    const e = map.get(c.category) ?? { category: c.category, points: 0, count: 0 };
+    e.points += c.points;
+    e.count += 1;
+    map.set(c.category, e);
+  }
+  return [...map.values()];
+}

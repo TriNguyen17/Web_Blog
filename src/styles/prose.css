@@ -155,3 +155,66 @@
   accent-color: var(--accent);
   margin-right: 0.5em;
 }
+
+/* GitHub-style callouts (src/plugins/rehype-callouts.mjs) */
+.prose .callout {
+  --c: var(--cat-web);
+  margin: 1.4em 0;
+  padding: 12px 18px 14px;
+  background: color-mix(in srgb, var(--c) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+  border-left: 3px solid var(--c);
+  border-radius: var(--radius);
+}
+
+.prose .callout > :last-child {
+  margin-bottom: 0;
+}
+
+.prose .callout__title {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 85%, var(--text));
+}
+
+.prose .callout__title::before {
+  content: '[i] ';
+  content: '[i] ' / '';
+}
+
+.prose .callout--tip {
+  --c: var(--accent);
+}
+.prose .callout--tip .callout__title::before {
+  content: '[+] ';
+  content: '[+] ' / '';
+}
+.prose .callout--important {
+  --c: var(--cat-re);
+}
+.prose .callout--important .callout__title::before {
+  content: '[*] ';
+  content: '[*] ' / '';
+}
+.prose .callout--warning {
+  --c: var(--cat-crypto);
+}
+.prose .callout--warning .callout__title::before {
+  content: '[!] ';
+  content: '[!] ' / '';
+}
+.prose .callout--caution {
+  --c: var(--cat-pwn);
+}
+.prose .callout--caution .callout__title::before {
+  content: '[x] ';
+  content: '[x] ' / '';
+}
+
+:root[data-theme='light'] .prose .callout__title {
+  color: color-mix(in srgb, var(--c) 75%, #000);
+}

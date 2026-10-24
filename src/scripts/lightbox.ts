@@ -1,6 +1,6 @@
 /**
  * Photo lightbox. Reads the data on each `.shot` button in #photo-grid, so it
- * needs no server data: the full-size src is the largest candidate of the
+ * needs no server data: the full-size src is a large-enough candidate of the
  * thumbnail's srcset. Supports keyboard (←/→/Esc), swipe, preloading of
  * neighbours, and only cycles through photos the tag filter left visible.
  */
@@ -16,8 +16,11 @@ interface Slide {
   albumHref?: string;
 }
 
-/** Largest URL from an <img> srcset, falling back to src. */
-function largestSrc(img: HTMLImageElement) {
+/**
+ * Smallest srcset candidate wide enough for the viewport (the lightbox shows
+ * the photo at most ~1100 CSS px wide), else the largest; falls back to src.
+ */
+function fullSrc(img: HTMLImageElement) {
   const candidates = (img.getAttribute('srcset') ?? '')
     .split(',')
     .map((part) => {
@@ -26,7 +29,9 @@ function largestSrc(img: HTMLImageElement) {
     })
     .filter((c) => c.url);
   if (!candidates.length) return img.currentSrc || img.src;
-  return candidates.reduce((a, b) => (b.width > a.width ? b : a)).url;
+  const need = Math.min(window.innerWidth, 1100) * (window.devicePixelRatio || 1);
+  const sorted = candidates.sort((a, b) => a.width - b.width);
+  return (sorted.find((c) => c.width >= need) ?? sorted[sorted.length - 1]).url;
 }
 
 export function initLightbox() {
@@ -59,7 +64,7 @@ export function initLightbox() {
     );
     return buttons.map((button) => ({
       button,
-      src: largestSrc(button.querySelector('img')!),
+      src: fullSrc(button.querySelector('img')!),
       alt: button.dataset.alt ?? '',
       caption: button.dataset.caption ?? '',
       date: button.dataset.date ?? '',

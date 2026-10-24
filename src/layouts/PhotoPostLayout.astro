@@ -28,9 +28,9 @@ const tags = allPhotoPostTags(entry);
   tags={tags}
 >
   <article class="photo-post page">
-    <div class="container photo-post__inner">
+    <div class="container">
       <header class="photo-post__hero">
-        <nav class="breadcrumb" aria-label="Breadcrumb">
+        <nav class="breadcrumb" aria-label="Đường dẫn">
           <a href={url('/photos/')}>photos</a>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{entry.id}</span>
@@ -87,10 +87,6 @@ const tags = allPhotoPostTags(entry);
 </BaseLayout>
 
 <style>
-  .photo-post__inner {
-    max-width: 1140px;
-  }
-
   .photo-post__hero {
     max-width: 720px;
     margin-bottom: 32px;

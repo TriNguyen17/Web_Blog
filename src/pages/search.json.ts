@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { render } from 'astro:content';
 import { getPhotoPosts, getWriteups, writeupUrl, photoPostUrl, allPhotoPostTags } from '../lib/posts';
 import { matchChallenge, normalizeName } from '../lib/ctf';
-import { splitH2Sections, stripMarkdown } from '../lib/utils';
+import { introBeforeH2, splitH2Sections, stripMarkdown } from '../lib/utils';
 import type { SearchDoc } from '../scripts/search';
 
 /**
@@ -16,7 +16,19 @@ export const GET: APIRoute = async () => {
 
   for (const entry of writeups) {
     const href = writeupUrl(entry);
-    const body = stripMarkdown(entry.body);
+    // Whole-post doc: the intro and the sections that are not challenges
+    // ("Lời kết"...). Challenge text lives in the challenge docs below, so a
+    // snippet never mixes two challenges (or shows another one's flag).
+    const { headings } = await render(entry);
+    const sections = splitH2Sections(entry.body);
+    const challengeHeadings = new Set(
+      entry.data.challenges
+        .map((c) => headings.find((h) => h.depth === 2 && matchChallenge([c], h))?.text ?? c.name)
+        .map(normalizeName),
+    );
+    const intro = introBeforeH2(entry.body);
+    const other = sections.filter((s) => !challengeHeadings.has(normalizeName(stripMarkdown(s.heading))));
+    const body = stripMarkdown([intro, ...other.map((s) => `## ${s.heading}\n${s.body}`)].join('\n'));
     docs.push({
       type: 'writeup',
       title: entry.data.title,
@@ -25,12 +37,10 @@ export const GET: APIRoute = async () => {
       description: entry.data.description,
       tags: entry.data.tags,
       meta: entry.data.ctf.name,
-      text: body.slice(0, 4000),
+      text: body.slice(0, 6000),
     });
 
     // Per-challenge docs: deep link to the heading, text of its own section.
-    const { headings } = await render(entry);
-    const sections = splitH2Sections(entry.body);
     for (const c of entry.data.challenges) {
       const heading = headings.find((h) => h.depth === 2 && matchChallenge([c], h));
       // The rendered heading text has SmartyPants quotes / dashes, the raw

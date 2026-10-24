@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { FeedItem } from '../lib/posts';
-import { categorySlug } from '../lib/ctf';
+import { CATEGORIES, categorySlug, parseRank } from '../lib/ctf';
 import { formatDate, isoDate } from '../lib/utils';
 import Icon from './Icon.astro';
 import TagList from './TagList.astro';
@@ -17,6 +17,9 @@ interface Props {
 const { item, eager = false, headingLevel = 3 } = Astro.props;
 const categories = [...new Set(item.categories)];
 const Heading = `h${headingLevel}` as 'h2' | 'h3';
+const rank = parseRank(item.ctf?.rank);
+const catPoints = item.catPoints ?? [];
+const ctfLine = [item.ctf?.format, item.ctf?.team && `team ${item.ctf.team}`].filter(Boolean).join(' · ');
 ---
 
 {
@@ -38,13 +41,58 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3';
         <a href={item.href}>{item.title}</a>
       </Heading>
       <p class="post-card__desc">{item.description}</p>
-      {categories.length > 0 && (
-        <div class="post-card__cats">
-          {categories.map((cat) => (
-            <span class="cat-badge" data-cat={categorySlug(cat)}>
-              {cat}
-            </span>
-          ))}
+      {item.ctf && (
+        <p class="score__ctf">
+          <span class="score__ctf-name">{item.ctf.name}</span>
+          {ctfLine && <span class="score__ctf-meta">{ctfLine}</span>}
+        </p>
+      )}
+      {((item.solved ?? 0) > 0 || item.ctf?.rank) && (
+        <dl class="score">
+          {item.ctf?.rank && (
+            <div>
+              <dt>Hạng</dt>
+              <dd>
+                {rank ? (
+                  <>
+                    {rank.pos}
+                    <span class="score__of">/{rank.total}</span>
+                  </>
+                ) : (
+                  item.ctf.rank
+                )}
+              </dd>
+            </div>
+          )}
+          {(item.solved ?? 0) > 0 && (
+            <>
+              <div>
+                <dt>Đã giải</dt>
+                <dd>{item.solved}</dd>
+              </div>
+              <div>
+                <dt>Điểm</dt>
+                <dd>{item.points}</dd>
+              </div>
+            </>
+          )}
+        </dl>
+      )}
+      {catPoints.length > 0 && (
+        <div class="score__cats">
+          <div class="score__bar" aria-hidden="true">
+            {catPoints.map((c) => (
+              <span data-cat={categorySlug(c.category)} style={`flex-grow:${c.points || c.count}`} />
+            ))}
+          </div>
+          <ul class="score__legend" aria-label="Challenge theo category">
+            {catPoints.map((c) => (
+              <li data-cat={categorySlug(c.category)} title={CATEGORIES[c.category].name}>
+                {c.category}
+                <span class="score__legend-n">{c.count}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       <TagList tags={item.tags} class="post-card__tags" />
@@ -228,10 +276,111 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3';
     overflow: hidden;
   }
 
-  .post-card__cats {
+  /* --- write-up scoreboard --- */
+  .score__ctf {
     display: flex;
     flex-wrap: wrap;
+    gap: 2px 10px;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .score__ctf-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .score__ctf-meta {
+    color: var(--text-muted);
+  }
+
+  .score {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    margin: 0;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+  }
+
+  .score > div {
+    padding: 8px 12px;
+  }
+
+  .score > div + div {
+    border-left: 1px solid var(--border-soft);
+  }
+
+  .score dt {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .score dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .score__of {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-faint);
+  }
+
+  .score__cats {
+    display: grid;
+    gap: 8px;
+  }
+
+  .score__bar {
+    display: flex;
+    gap: 2px;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+  }
+
+  .score__bar span {
+    flex-basis: 0;
+    background: var(--c);
+  }
+
+  .score__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--text-muted);
+  }
+
+  .score__legend li {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
+  }
+
+  .score__legend li::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--c);
+  }
+
+  .score__legend-n {
+    color: var(--text-faint);
   }
 
   .post-card :global(.post-card__tags) {
