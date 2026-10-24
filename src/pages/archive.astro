@@ -267,8 +267,7 @@ const photoCount = photos.reduce((n, p) => n + p.data.photos.length, 0);
 
   @media (max-width: 600px) {
     .log__row {
-      grid-template-columns: auto auto;
-      justify-content: start;
+      grid-template-columns: max-content 1fr;
       padding-left: 16px;
     }
 

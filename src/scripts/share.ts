@@ -5,9 +5,11 @@
  *  - [data-share-copy]: copy the page URL.
  *  - [data-share-native]: Web Share sheet (shown only where supported).
  */
-import { announce, copyText } from './announce';
+import { announce, copyText, liveRegion } from './announce';
 
 export function initShare(root: ParentNode = document) {
+  // Created up front: screen readers ignore a region that appears and changes at once.
+  liveRegion();
   root.addEventListener('click', async (ev) => {
     const e = ev as MouseEvent;
     const a = (e.target as Element).closest<HTMLAnchorElement>('a[data-copy-link]');

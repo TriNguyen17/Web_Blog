@@ -53,7 +53,7 @@ const next = () => `--i:${line++}`;
         </div>
         <div class="term__body">
           {whoami && (
-            <div class="term__block term__block--whoami">
+            <div class:list={['term__block', { 'term__block--whoami': recent.length > 0 }]}>
               <p class="term__line" style={next()}><span class="term__prompt" aria-hidden="true">$</span> {whoami.cmd}</p>
               <p class="term__out" style={next()}>{whoami.out}</p>
             </div>
@@ -260,7 +260,7 @@ const next = () => `--i:${line++}`;
   }
 
   /* Typing effect: each line is uncovered left to right, one after another. */
-  :global(.hero-type) .term__body > :is(p, div) > *,
+  :global(.hero-type) .term__body > div > *,
   :global(.hero-type) .term__body > p {
     animation: term-type 0.32s steps(18, end) both;
     animation-delay: calc(var(--i, 0) * 170ms + 150ms);

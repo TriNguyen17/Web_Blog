@@ -14,7 +14,9 @@ interface Props {
 }
 
 const { options, allLabel = 'Tất cả', label, total } = Astro.props;
-const useful = options.filter((o) => total === undefined || o.count === undefined || o.count < total);
+const useful = options.filter(
+  (o) => o.count === undefined || (o.count > 0 && (total === undefined || o.count < total)),
+);
 ---
 
 {useful.length > 0 && (

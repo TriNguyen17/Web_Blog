@@ -80,6 +80,18 @@ export function splitH2Sections(body = '') {
   return sections;
 }
 
+/** Markdown before the first `## ` heading (ignoring fenced code blocks). */
+export function introBeforeH2(body = '') {
+  let fence: string | null = null;
+  const lines = body.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const marker = /^\s*(```|~~~)/.exec(lines[i])?.[1];
+    if (marker) fence = fence === marker ? null : (fence ?? marker);
+    else if (!fence && /^##\s/.test(lines[i])) return lines.slice(0, i).join('\n');
+  }
+  return body;
+}
+
 /** Plain-text version of a Markdown body, for search and descriptions. */
 export function stripMarkdown(body = '') {
   // Inline code is kept verbatim (`__init__`, `m**3`): park it in placeholders

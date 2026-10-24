@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { render } from 'astro:content';
 import { getPhotoPosts, getWriteups, writeupUrl, photoPostUrl, allPhotoPostTags } from '../lib/posts';
 import { matchChallenge, normalizeName } from '../lib/ctf';
-import { splitH2Sections, stripMarkdown } from '../lib/utils';
+import { introBeforeH2, splitH2Sections, stripMarkdown } from '../lib/utils';
 import type { SearchDoc } from '../scripts/search';
 
 /**
@@ -26,8 +26,7 @@ export const GET: APIRoute = async () => {
         .map((c) => headings.find((h) => h.depth === 2 && matchChallenge([c], h))?.text ?? c.name)
         .map(normalizeName),
     );
-    const firstH2 = entry.body?.search(/^##\s/m) ?? -1;
-    const intro = firstH2 > 0 ? entry.body!.slice(0, firstH2) : sections.length ? '' : (entry.body ?? '');
+    const intro = introBeforeH2(entry.body);
     const other = sections.filter((s) => !challengeHeadings.has(normalizeName(stripMarkdown(s.heading))));
     const body = stripMarkdown([intro, ...other.map((s) => `## ${s.heading}\n${s.body}`)].join('\n'));
     docs.push({

@@ -49,6 +49,7 @@ export function initCodeBlocks(root: ParentNode = document) {
 
 /** A small copy button after each flag (`FLAG{...}` code) in a Flag step. */
 export function initFlagCopy(root: ParentNode = document) {
+  if (root.querySelector('.ctf-step--flag p > code')) liveRegion();
   for (const code of root.querySelectorAll<HTMLElement>('.ctf-step--flag p > code')) {
     if (code.nextElementSibling?.classList.contains('flag-copy')) continue;
     const button = document.createElement('button');

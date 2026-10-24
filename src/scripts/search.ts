@@ -84,7 +84,7 @@ function matches(hay: string, w: string): number[] {
     out.push(m.index + m[0].length - w.length);
     if (m[0].length === 0) re.lastIndex += 1;
   }
-  if (!out.length && w.length >= 4) {
+  if (!out.length && (w.length >= 4 || /^[^a-z0-9]/.test(w))) {
     for (let i = hay.indexOf(w); i !== -1; i = hay.indexOf(w, i + w.length)) out.push(i);
   }
   return out;

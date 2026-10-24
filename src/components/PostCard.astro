@@ -47,7 +47,7 @@ const ctfLine = [item.ctf?.format, item.ctf?.team && `team ${item.ctf.team}`].fi
           {ctfLine && <span class="score__ctf-meta">{ctfLine}</span>}
         </p>
       )}
-      {(item.solved ?? 0) > 0 && (
+      {((item.solved ?? 0) > 0 || item.ctf?.rank) && (
         <dl class="score">
           {item.ctf?.rank && (
             <div>
@@ -64,21 +64,25 @@ const ctfLine = [item.ctf?.format, item.ctf?.team && `team ${item.ctf.team}`].fi
               </dd>
             </div>
           )}
-          <div>
-            <dt>Đã giải</dt>
-            <dd>{item.solved}</dd>
-          </div>
-          <div>
-            <dt>Điểm</dt>
-            <dd>{item.points}</dd>
-          </div>
+          {(item.solved ?? 0) > 0 && (
+            <>
+              <div>
+                <dt>Đã giải</dt>
+                <dd>{item.solved}</dd>
+              </div>
+              <div>
+                <dt>Điểm</dt>
+                <dd>{item.points}</dd>
+              </div>
+            </>
+          )}
         </dl>
       )}
       {catPoints.length > 0 && (
         <div class="score__cats">
           <div class="score__bar" aria-hidden="true">
             {catPoints.map((c) => (
-              <span data-cat={categorySlug(c.category)} style={`flex-grow:${c.points}`} />
+              <span data-cat={categorySlug(c.category)} style={`flex-grow:${c.points || c.count}`} />
             ))}
           </div>
           <ul class="score__legend" aria-label="Challenge theo category">
